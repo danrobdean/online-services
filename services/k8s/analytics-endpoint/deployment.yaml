@@ -1,0 +1,59 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: analytics-deployment
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: analytics-service
+    spec:
+      containers:
+      - args:
+        - --http_port=8081
+        - --backend=127.0.0.1:8080
+        - --service=analytics-development.endpoints.logical-flame-194710.cloud.goog # [You suffix & your Google project id!]
+        - --rollout_strategy=managed
+        - --service_account_key=/secrets/json/analytics-endpoint.json
+        image: gcr.io/endpoints-release/endpoints-runtime:1
+        imagePullPolicy: Always
+        name: analytics-deployment-endpoint
+        ports:
+        - containerPort: 8081
+        volumeMounts:
+        - mountPath: /secrets/json/
+          name: analytics-endpoint-json
+          readOnly: true
+      - args:
+        env:
+        - name: SECRET_JSON
+          value: /secrets/json/analytics-gcs-writer.json
+        - name: SECRET_P12
+          value: /secrets/p12/analytics-gcs-writer.p12
+        - name: BUCKET_NAME
+          value: logical-flame-194710-analytics # [your Google project id]-analytics
+        - name: GCP
+          value: logical-flame-194710 # [your Google project id]
+        - name: EMAIL
+          value: event-gcs-writer@logical-flame-194710.iam.gserviceaccount.com # [your Google project id]
+        image: gcr.io/logical-flame-194710/analytics-endpoint # [your Google project id]
+        imagePullPolicy: Always
+        name: analytics-deployment-server
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - mountPath: /secrets/json/
+          name: analytics-gcs-writer-json
+        - mountPath: /secrets/p12/
+          name: analytics-gcs-writer-p12
+      volumes:
+      - name: analytics-gcs-writer-json
+        secret:
+          secretName: analytics-gcs-writer-json
+      - name: analytics-gcs-writer-p12
+        secret:
+          secretName: analytics-gcs-writer-p12
+      - name: analytics-endpoint-json
+        secret:
+          secretName: analytics-endpoint-json
