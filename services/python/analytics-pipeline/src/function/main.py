@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 # Python 3.7
 
-from google.cloud.exceptions import NotFound
 from google.cloud import bigquery, storage
 import hashlib
 import base64
 import json
 import time
-import re
-import os
 
 from common.parser import jsonParser, parseField, pathParser, unixTimestampCheck
 from common.bigquery import provisionBigQuery
@@ -107,7 +104,3 @@ def cf0GcsToBq(data, context):
 		errors = client_bq.insert_rows(table_debug, eventFormatter([batch], job_name, gspath))
 		if errors:
 			print('Errors while inserting debug event: ' + str(errors))
-
-# if os.environ['TYPE'] == 'buildkite':
-# 	def cf0GcsToBq_bk(a, b):
-# 		cf0GcsToBq(a, b)
