@@ -39,7 +39,7 @@ curl --request POST \
   --data "{\"content_type\":\"text/plain\", \"md5_digest\": \"XKvMhvwrORVuxdX54FQEdg==\"}" \
   "http://0.0.0.0:8080/v1/file?key=local_so_does_not_matter&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"
 ```
-_Note: The above are UNIX based commands, if you run Windows best skip this step & go straight to Containerized Execution._
+_Note: The above are UNIX based commands, if you run Windows best skip this step & go straight to (1)._
 
 ### (1) - Containerizing the Analytics Endpoint
 
@@ -60,7 +60,7 @@ docker run -it \
   -v /Users/loek/secrets/logical-flame-194710/analytics-gcs-writer.p12:/secrets/p12/analytics-gcs-writer.p12 \
   --entrypoint bash \
   gcr.io/logical-flame-194710/analytics-endpoint:latest
-# Tip - Use 'exit' to stop the container
+# Tip - Type & submit 'exit' to stop the container
 ```
 
 #### (1.1) - Testing the Analytics Endpoint Container Locally
@@ -219,10 +219,11 @@ bq --location=EU query \
  # +--------------+----------------------------+------+
 ```
 
-#### (3.1) - Option 2: Importing the files in GCS into a permanent table (which then allows subsequent querying)
+#### (3.1) - Option 2: Importing the files in GCS into a Native or External table (which then allows subsequent querying)
 
 - Go to your BigQuery overview, click on a dataset & then **Create Table**. Fill out form & hit **Create table** again, example input:
-    + Table name: **events_cold**
+    + Table name: **events_gcs**
+    + Table type: choose **External** to establish a live link between GCS & BigQuery or **Native**, which imports the data "as of now" into a static table in BigQuery. Note that querying an External table will dynamically (re-)parse all files present in your GCS URI (below).
     + GCS URI: **gs://gcp-analytics-pipeline-events/data_type=json/analytics_environment=testing/event_category=cold/***
     + Schema: **eventIndex:INTEGER,buildVersion:STRING,eventType:STRING,sessionId:STRING,eventEnvironment:STRING,eventSource:STRING,eventTimestamp:TIMESTAMP,eventAttributes:STRING,eventClass:STRING,receivedTimestamp:TIMESTAMP**
 - Usage notes:

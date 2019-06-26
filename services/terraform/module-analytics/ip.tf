@@ -8,4 +8,3 @@ resource "google_compute_address" "analytics_ip" {
 output "analytics_host" {
   value = google_compute_address.analytics_ip.address
 }
-
