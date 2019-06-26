@@ -1,3 +1,4 @@
+
 # Create analytics-gcs-writer Service Account
 resource "google_service_account" "analytics_gcs_writer_sa" {
   account_id   = "analytics-gcs-writer"

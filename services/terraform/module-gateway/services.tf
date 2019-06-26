@@ -1,3 +1,4 @@
+
 resource "google_endpoints_service" "gateway_endpoint" {
   service_name         = "gateway.endpoints.${var.gcloud_project}.cloud.goog"
   project              = "${var.gcloud_project}"
@@ -17,4 +18,16 @@ resource "google_endpoints_service" "playfab_auth_endpoint" {
   project              = "${var.gcloud_project}"
   grpc_config          = "${templatefile("./module-gateway/spec/playfab_auth_spec.yml", { project: var.gcloud_project, target: google_compute_address.playfab_auth_ip.address })}"
   protoc_output_base64 = "${filebase64("./module-gateway/api_descriptors/playfab_auth_descriptor.pb")}"
+}
+
+output "gateway_dns" {
+  value = "${google_endpoints_service.gateway_endpoint.dns_address}"
+}
+
+output "party_dns" {
+  value = "${google_endpoints_service.party_endpoint.dns_address}"
+}
+
+output "playfab_auth_dns" {
+  value = "${google_endpoints_service.playfab_auth_endpoint.dns_address}"
 }
