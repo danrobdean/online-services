@@ -4,28 +4,28 @@ data "archive_file" "cloud_function_analytics" {
   output_path = "${path.module}/../../python/analytics-pipeline/cloud-function-analytics.zip"
 
   source {
-    content  = "${file("${path.module}/../../python/analytics-pipeline/src/main.py")}"
+    content  = "${file("${path.module}/../../python/analytics-pipeline/src/function/main.py")}"
     filename = "main.py"
   }
 
   source {
-    content  = "${file("${path.module}/../../python/analytics-pipeline/src/requirements-function.txt")}"
+    content  = "${file("${path.module}/../../python/analytics-pipeline/src/requirements/function.txt")}"
     filename = "requirements.txt"
   }
 
   source {
-    content  = "${file("${path.module}/../../python/analytics-pipeline/src/shared/__init__.py")}"
-    filename = "shared/__init__.py"
+    content  = "${file("${path.module}/../../python/analytics-pipeline/src/dataflow/common/__init__.py")}"
+    filename = "common/__init__.py"
   }
 
   source {
-    content  = "${file("${path.module}/../../python/analytics-pipeline/src/shared/bigquery.py")}"
-    filename = "shared/bigquery.py"
+    content  = "${file("${path.module}/../../python/analytics-pipeline/src/dataflow/common/bigquery.py")}"
+    filename = "common/bigquery.py"
   }
 
   source {
-    content  = "${file("${path.module}/../../python/analytics-pipeline/src/shared/parser.py")}"
-    filename = "shared/parser.py"
+    content  = "${file("${path.module}/../../python/analytics-pipeline/src/dataflow/common/parser.py")}"
+    filename = "common/parser.py"
   }
 
 }

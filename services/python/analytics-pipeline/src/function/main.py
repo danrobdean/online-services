@@ -10,8 +10,8 @@ import time
 import re
 import os
 
-from shared.parser import jsonParser, parseField, pathParser, unixTimestampCheck
-from shared.bigquery import provisionBigQuery
+from common.parser import jsonParser, parseField, pathParser, unixTimestampCheck
+from common.bigquery import provisionBigQuery
 
 client_gcs, client_bq = storage.Client(), bigquery.Client()
 

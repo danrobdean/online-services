@@ -14,7 +14,7 @@ Before you begin..
 python3 -m venv venv # Create Python3 virtualenv
 source venv/bin/activate # Activate venv
 pip install --upgrade pip # Upgrade pip
-pip install -r ../../services/python/analytics-pipeline/src/requirements-endpoint.txt # Install dependencies
+pip install -r ../../services/python/analytics-pipeline/src/requirements/endpoint.txt # Install dependencies
 # deactivate # exit virtualenv
 
 # Set environment variables:
@@ -25,7 +25,7 @@ export SECRET_P12="/Users/loek/secrets/logical-flame-194710/analytics-gcs-writer
 export EMAIL="analytics-gcs-writer@logical-flame-194710.iam.gserviceaccount.com"
 
 # Trigger script!
-python ../../services/python/analytics-pipeline/src/analytics_endpoint.py
+python ../../services/python/analytics-pipeline/src/endpoint/main.py
 
 # Verify v1/event method is working:
 curl --request POST \
@@ -235,7 +235,7 @@ _Tip: The GCS file path [accepts wildcards](https://cloud.google.com/bigquery/ex
 ### (4) - Writing Events to the Cloud Function
 
 ```bash
-python ../../services/python/analytics-pipeline/src/analytics_endpoint_scale_test.py \
+python ../../services/python/analytics-pipeline/src/endpoint/scale-test.py \
   --gcp-secret-path=/Users/loek/secrets/logical-flame-194710/analytics-gcs-writer.json \
   --host=http://analytics.endpoints.logical-flame-194710.cloud.goog/ \
   --api-key=AIzaSyCP3Feg6_dLZ7sze9gsjhXRg7XFfPxKrl4 \

@@ -5,8 +5,8 @@ import hashlib
 import json
 import os
 
-from individual.analytics_endpoint_functions import formatEvent, dateTime
-from individual.analytics_endpoint_classes import CloudStorageURLSigner
+from common.functions import formatEvent, dateTime
+from common.classes import CloudStorageURLSigner
 from flask import Flask, jsonify, request
 from six.moves import http_client
 from google.cloud import storage
