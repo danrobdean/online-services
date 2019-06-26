@@ -14,7 +14,7 @@ Before you begin..
 python3 -m venv venv # Create Python3 virtualenv
 source venv/bin/activate # Activate venv
 pip install --upgrade pip # Upgrade pip
-pip install -r ../../services/python/analytics-pipeline/src/requirements.txt # Install dependencies
+pip install -r ../../services/python/analytics-pipeline/src/requirements-endpoint.txt # Install dependencies
 # deactivate # exit virtualenv
 
 # Set environment variables:
@@ -141,13 +141,13 @@ Next, [get an API key for your GCP](https://cloud.google.com/endpoints/docs/open
 curl --request POST \
   --header "content-type:application/json" \
   --data "{\"message\":\"hello world\"}" \
-  "http://analytics-development.endpoints.logical-flame-194710.cloud.goog:80/v1/event?key=AIzaSyCP3Feg6_dLZ7sze9gsjhXRg7XFfPxKrl4&analytics_environment=testing&event_category=cold&session_id=f58179a375290599dde17f7c6d546d78"
+  "http://analytics.endpoints.logical-flame-194710.cloud.goog:80/v1/event?key=AIzaSyCP3Feg6_dLZ7sze9gsjhXRg7XFfPxKrl4&analytics_environment=testing&event_category=cold&session_id=f58179a375290599dde17f7c6d546d78"
 
 # Verify v1/file method is working:
 curl --request POST \
   --header 'content-type:application/json' \
   --data "{\"content_type\":\"text/plain\", \"md5_digest\": \"XKvMhvwrORVuxdX54FQEdg==\"}" \
-  "http://analytics-development.endpoints.logical-flame-194710.cloud.goog:80/v1/file?key=AIzaSyCP3Feg6_dLZ7sze9gsjhXRg7XFfPxKrl4&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"
+  "http://analytics.endpoints.logical-flame-194710.cloud.goog:80/v1/file?key=AIzaSyCP3Feg6_dLZ7sze9gsjhXRg7XFfPxKrl4&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"
 ```
 ### (2) Using the Endpoint
 
@@ -175,7 +175,7 @@ Note that data_type is determined automatically and can either be **json** (when
 The **event_category** parameter is particularly **important**:
 
 - When set to **function** all data contained in the POST request will be **streamed into BigQuery** using a Cloud Function.
-- When set to **anything else** all data contained in the POST request will **arrive in GCS**, but will **not be forwarded to BigQuery**.
+- When set to **anything else** all data contained in the POST request will **arrive in GCS**, but will **not by default be forwarded to BigQuery**.
 
 ### (2.1) - `/v1/file`
 
@@ -232,7 +232,50 @@ bq --location=EU query \
 
 _Tip: The GCS file path [accepts wildcards](https://cloud.google.com/bigquery/external-data-cloud-storage#wildcard-support)._
 
-### (4) - Cleanup
+### (4) - Writing Events to the Cloud Function
+
+```bash
+python ../../services/python/analytics-pipeline/src/analytics_endpoint_scale_test.py \
+  --gcp-secret-path=/Users/loek/secrets/logical-flame-194710/analytics-gcs-writer.json \
+  --host=http://analytics.endpoints.logical-flame-194710.cloud.goog/ \
+  --api-key=AIzaSyCP3Feg6_dLZ7sze9gsjhXRg7XFfPxKrl4 \
+  --bucket-name=logical-flame-194710-analytics \
+  --scale-test-name=scale-test \
+  --event-category=function \
+  --analytics-environment=testing \
+  --pool-size=30 \
+  --n=1000
+```
+
+Copy the scale test name & replace {SCALE_TEST_NAME} with it in the below query before submitting it in your terminal:
+
+```bash
+QUERY="
+SELECT
+  a.n,
+  COUNT(*) AS freq,
+  a.n * COUNT(*) AS total_no_events
+FROM
+    (
+    SELECT batch_id, COUNT(*) as n
+    FROM events.events_function
+    WHERE event_type = '{SCALE_TEST_NAME}'
+    GROUP BY 1
+    ) a
+GROUP BY 1
+;
+"
+bq query --use_legacy_sql=false $QUERY
+
+# Waiting on bqjob_r74008c4853c5f13c_0000016b9436e003_1 ... (1s) Current status: DONE   
+# +---+------+-----------------+
+# | n | freq | total_no_events |
+# +---+------+-----------------+
+# | 4 | 1000 |            4000 |
+# +---+------+-----------------+
+```
+
+### (5) - Cleanup
 
 ```bash
 # Obtain list of all your deployments

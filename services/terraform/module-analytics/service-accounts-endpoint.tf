@@ -7,7 +7,7 @@ resource "google_service_account" "analytics_gcs_writer_sa" {
 
 # Grant the Service Account Admin rights to our specific GCS bucket
 resource "google_storage_bucket_iam_member" "analytics_gcs_writer_binding" {
-  bucket = "${var.gcloud_project}-${var.gcloud_analytics_bucket_name}"
+  bucket = "${var.gcloud_project}-analytics"
   role   = "roles/storage.admin"
   member = "serviceAccount:${google_service_account.analytics_gcs_writer_sa.email}"
 
@@ -18,6 +18,7 @@ resource "google_storage_bucket_iam_member" "analytics_gcs_writer_binding" {
 # Create a JSON key file for the Service Account
 resource "google_service_account_key" "analytics_gcs_writer_key_json" {
   service_account_id = google_service_account.analytics_gcs_writer_sa.name
+  private_key_type   = "TYPE_GOOGLE_CREDENTIALS_FILE" # {TYPE_PKCS12_FILE, TYPE_GOOGLE_CREDENTIALS_FILE}
 }
 
 # Create a P12 key file for the Service Account

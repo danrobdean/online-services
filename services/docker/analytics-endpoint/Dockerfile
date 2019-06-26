@@ -19,7 +19,7 @@ ADD python /app/python
 WORKDIR /app
 
 RUN pip install --upgrade pip
-RUN pip install -r python/analytics-pipeline/src/requirements.txt
+RUN pip install -r python/analytics-pipeline/src/requirements-endpoint.txt
 
 # Currently using the gevent asynchronous worker, which is appropriate for I/O processing..
 ENTRYPOINT ["gunicorn", "--chdir", "/app/python/analytics-pipeline/src/", "analytics_endpoint:app", "-b", ":8080", "-w", "2", "-k", "gevent", "--worker-connections", "1000"]

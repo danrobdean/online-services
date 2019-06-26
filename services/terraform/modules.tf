@@ -12,7 +12,6 @@ module "gateway" {
 
 module "analytics" {
   source                           = "./module-analytics"
-  gcloud_analytics_bucket_name     = "analytics"
   gcloud_analytics_bucket_location = "EU"
   gcloud_region                    = "${var.gcloud_region}"
   gcloud_project                   = "${var.gcloud_project}"
