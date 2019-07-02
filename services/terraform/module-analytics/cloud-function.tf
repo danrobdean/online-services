@@ -5,8 +5,8 @@ resource "google_storage_bucket_object" "function_analytics" {
   source = "${path.module}/../../python/analytics-pipeline/cloud-function-analytics.zip"
 }
 
-resource "google_cloudfunctions_function" "function" {
-  name                  = "function-gcs-to-bq"
+resource "google_cloudfunctions_function" "function_analytics" {
+  name                  = "function-gcs-to-bq-${random_pet.cloud_function_pet.id}"
   description           = "GCS to BigQuery Cloud Function"
   runtime               = "python37"
 
@@ -22,4 +22,12 @@ resource "google_cloudfunctions_function" "function" {
     resource   = "${google_pubsub_topic.cloud_function_gcs_to_bq_topic.name}"
   }
 
+}
+
+# We attach a random pet name to the name of our cloud function to force a refresh with each apply
+resource "random_pet" "cloud_function_pet" {
+  length = 1
+  keepers = {
+    file_hash = "${google_storage_bucket_object.function_analytics.md5hash}"
+  }
 }
