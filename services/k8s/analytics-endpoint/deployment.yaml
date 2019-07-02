@@ -13,7 +13,7 @@ spec:
       - args:
         - --http_port=8081
         - --backend=127.0.0.1:8080
-        - --service=analytics.endpoints.logical-flame-194710.cloud.goog # [your Google project id!]
+        - --service=analytics.endpoints.logical-flame-194710.cloud.goog # [your Google project id]
         - --rollout_strategy=managed
         - --service_account_key=/secrets/json/analytics-endpoint.json
         image: gcr.io/endpoints-release/endpoints-runtime:1
