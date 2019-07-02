@@ -13,7 +13,7 @@ spec:
       - args:
         - --http_port=8081
         - --backend=127.0.0.1:8080
-        - --service=analytics.endpoints.logical-flame-194710.cloud.goog # [You suffix & your Google project id!]
+        - --service=analytics.endpoints.logical-flame-194710.cloud.goog # [your Google project id!]
         - --rollout_strategy=managed
         - --service_account_key=/secrets/json/analytics-endpoint.json
         image: gcr.io/endpoints-release/endpoints-runtime:1
@@ -36,8 +36,8 @@ spec:
         - name: GCP
           value: logical-flame-194710 # [your Google project id]
         - name: EMAIL
-          value: event-gcs-writer@logical-flame-194710.iam.gserviceaccount.com # [your Google project id]
-        image: gcr.io/logical-flame-194710/analytics-endpoint # [your Google project id]
+          value: analytics-gcs-writer@logical-flame-194710.iam.gserviceaccount.com # [your Google project id]
+        image: gcr.io/logical-flame-194710/analytics-endpoint
         imagePullPolicy: Always
         name: analytics-deployment-server
         ports:
