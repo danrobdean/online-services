@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Python 3.7.1
 
-# python src/p1-gcs-to-bq-stream-backfill.py \
+# python src/gcs-to-bq-backfill.py \
 #  --execution-environment=DataflowRunner \
 #  --local-sa-key=/Users/loek/secrets/logical-flame-194710/dataflow-gcs-to-bq-stream.json \
 #  --gcs-bucket=gcp-analytics-pipeline-events \

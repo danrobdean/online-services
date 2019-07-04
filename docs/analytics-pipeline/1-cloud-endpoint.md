@@ -2,12 +2,21 @@
 
 ### (0) - Running the Analytics Endpoint Locally
 
+First, let's create a virtual Python environment & install dependencies.
+
 ```bash
-# Create a virtual Python environment & install dependencies:
-python3 -m venv venv # Create a Python 3 virtual environment
-source venv/bin/activate # Activate virtual environment
-pip install --upgrade pip # Upgrade Python's package manager pip
-pip install -r ../../services/python/analytics-pipeline/src/requirements/endpoint.txt # Install dependencies with pip
+# Create a Python 3 virtual environment
+python3 -m venv venv-endpoint
+
+# Activate virtual environment
+source venv-endpoint/bin/activate
+
+# Upgrade Python's package manager pip
+pip install --upgrade pip
+
+# Install dependencies with pip
+pip install -r ../../services/python/analytics-pipeline/src/requirements/endpoint.txt
+
 # deactivate # exit virtual environment
 
 # Set environment variables:

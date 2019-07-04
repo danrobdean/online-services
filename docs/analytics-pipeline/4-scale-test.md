@@ -1,7 +1,23 @@
 ### (4) - Scale Testing the Analytics Pipeline
 
-<!-- Todo:
-- Add temp table query. -->
+First let's create a virtual Python environment & install dependencies.
+
+```bash
+# Create a Python 3 virtual environment
+python3 -m venv venv-scale-test
+
+# Activate virtual environment
+source venv-scale-test/bin/activate
+
+# Upgrade Python's package manager pip
+pip install --upgrade pip
+
+# Install dependencies with pip
+pip install -r ../../services/python/analytics-pipeline/src/requirements/dataflow.txt
+pip install -r ../../services/python/analytics-pipeline/src/requirements/scale-test.txt
+
+# deactivate # exit virtual environment
+```
 
 Let's first write 1000 batch files to GSC:
 

@@ -36,3 +36,42 @@ curl --request POST \
 The situation might arise that there are events in GCS that you wish to still ingest into native BigQuery storage using the Cloud Function. This could be because you either dropped your events table in BigQuery, or for instance did not write these events with the correct parameter setting (event_category=function).
 
 For these situation we provide a batch script which you can point to files in GCS, and send to a Pub/Sub Topic (in our case: the Pub/Sub Topic which feeds our analytics Cloud Function). The script is written using [Apache Beam's Python SDK](https://beam.apache.org/documentation/sdks/python/), and executed on [Cloud Dataflow](https://cloud.google.com/dataflow/). As these backfills are executed on an ad-hoc basis (only when required) we do not package it up and/or deploy it into production.
+
+First, let's create a virtual Python environment & install dependencies.
+
+```bash
+# Create a Python 3 virtual environment
+python3 -m venv venv-dataflow
+
+# Activate virtual environment
+source venv-dataflow/bin/activate
+
+# Upgrade Python's package manager pip
+pip install --upgrade pip
+
+# Install dependencies with pip
+pip install -r ../../services/python/analytics-pipeline/src/requirements/dataflow.txt
+
+# deactivate # exit virtual environment
+```
+
+Now let's boot our backfill batch script.
+
+```bash
+# Trigger script!
+python ../../services/python/analytics-pipeline/src/dataflow/gcs-to-bq-backfill.py  \
+  --execution-environment=DataflowRunner \
+  --local-sa-key=/Users/loek/secrets/logical-flame-194710/dataflow-gcs-to-bq-stream.json \
+  --gcs-bucket=gcp-analytics-pipeline-events \
+  --topic=analytics-gcs-topic-dataflow \
+  --gcp=logical-flame-194710
+  --analytics-environment= \
+  --event-category= \
+  --event-ds-start= \
+  --event-ds-stop= \
+  --event-time =
+
+# Note that we are simply following:
+# gs://{gcs-bucket}/data_type={json|unknown}/analytics_environment={testing|development|staging|production|live}/event_category={!function}/event_ds={yyyy-mm-dd}/event_time={0-8|8-16|16-24}/*
+
+```
