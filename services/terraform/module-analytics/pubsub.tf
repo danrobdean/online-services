@@ -62,6 +62,17 @@ resource "google_storage_notification" "notification_function_production" {
     depends_on         = ["google_pubsub_topic_iam_member.member_cloud_function"]
 }
 
+resource "google_storage_notification" "notification_function_live" {
+    bucket             = "${var.gcloud_project}-analytics"
+    payload_format     = "JSON_API_V1"
+    topic              = "${google_pubsub_topic.cloud_function_gcs_to_bq_topic.id}"
+    # See other event_types here: https://cloud.google.com/storage/docs/pubsub-notifications#events
+    event_types        = ["OBJECT_FINALIZE"]
+    # Only trigger a message to Pub/Sub for files hitting this prefix:
+    object_name_prefix = "data_type=json/analytics_environment=live/event_category=function/"
+    depends_on         = ["google_pubsub_topic_iam_member.member_cloud_function"]
+}
+
 # Create Pub/Sub Subscription.
 # resource "google_pubsub_subscription" "cloud_function_gcs_to_bq_subscription" {
 #   name                 = "cloud-function-gcs-to-bq-subscription"
