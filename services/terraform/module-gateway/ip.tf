@@ -1,4 +1,4 @@
-# This file defines the external IP addresses needed to expose the services
+# This file defines the external IP addresses needed to expose the services.
 
 resource "google_compute_address" "gateway_ip" {
     name = "gateway-address"

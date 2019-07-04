@@ -1,3 +1,4 @@
+# This file creates the endpoints required for the Gateway.
 
 resource "google_endpoints_service" "gateway_endpoint" {
   service_name         = "gateway.endpoints.${var.gcloud_project}.cloud.goog"

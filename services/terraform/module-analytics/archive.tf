@@ -1,3 +1,4 @@
+# This file creates a .zip file with everything required to run our Cloud Function.
 
 data "archive_file" "cloud_function_analytics" {
   type        = "zip"

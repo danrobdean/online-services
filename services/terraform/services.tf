@@ -1,4 +1,4 @@
-# This file is used to explicitly enable required Google Cloud services and define API endpoints.
+# This file is used to explicitly enable required Google Cloud services.
 
 resource "google_project_service" "servicemanagement" {
   project = "${var.gcloud_project}"

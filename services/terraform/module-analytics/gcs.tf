@@ -1,3 +1,4 @@
+# This files creates two GCS buckets.
 
 resource "google_storage_bucket" "analytics_bucket" {
   # force_destroy = True

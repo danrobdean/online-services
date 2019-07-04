@@ -1,10 +1,12 @@
-# This file defines our cloud provider - in this case, Google Cloud.
+# This file defines our providers. In this case, Google Cloud & Kubernetes.
 
+# Google Cloud
 provider "google" {
   project = "${var.gcloud_project}"
   zone    = "${var.gcloud_zone}"
 }
 
+# Kubernetes
 provider "kubernetes" {
   host     = google_container_cluster.primary.endpoint
   username = google_container_cluster.primary.master_auth[0].username
