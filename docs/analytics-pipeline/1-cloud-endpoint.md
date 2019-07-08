@@ -200,7 +200,7 @@ This method enables you to store analytics events in your GCS analytics bucket. 
 The URL takes 6 parameters:
 
 | Parameter             | Class    | Description |
-|-----------------------|------------------------|
+|-----------------------|----------|-------------|
 | key                   | Required | Must be tied to your GCP ([info](https://cloud.google.com/endpoints/docs/openapi/get-started-kubernetes#create_an_api_key_and_set_an_environment_variable)). |
 | analytics_environment | Optional | If omitted, currently defaults to **development**, otherwise must be one of {**'testing'**, '**development**', '**staging**', '**production**', '**live**'}. |
 | event_category        | Optional | If omitted, currently defaults to **cold**. |
@@ -224,7 +224,7 @@ The **event_category** parameter is particularly **important**:
 #### (2.0.1) - The JSON Event Schema
 
 | Key              | Type    | Description |
-|------------------|------------------------
+|------------------|---------|-------------|
 | eventEnvironment | string  | One of  {**testing**, **development**, **staging**, **production**}. |
 | eventIndex       | integer | Increments with one with each event per eventSource, allows us to spot missing data. |
 | eventSource      | string  | Source of the event, e.g. worker type. |
