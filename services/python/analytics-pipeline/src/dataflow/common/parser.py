@@ -21,7 +21,7 @@ def typeParser(type, environment):
         suffix, suffix_bq = '', ''
         if environment in ['all', '']:
             environment = 'all'
-            list_env, name_env = ['development', 'testing', 'staging', 'production'], environment + '-envs'
+            list_env, name_env = ['development', 'testing', 'staging', 'production', 'live'], environment + '-envs'
         else:
             list_env, name_env = [environment], environment
     return suffix, suffix_bq, list_env, name_env

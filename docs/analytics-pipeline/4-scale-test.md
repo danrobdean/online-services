@@ -70,7 +70,7 @@ GROUP BY 1
 bq \
   --location=EU \
   --use_legacy_sql=false \
-  --external_table_definition=table_test::batchId:STRING,eventType:STRING@NEWLINE_DELIMITED_JSON=gs://{CLOUD_PROJECT_ID}-analytics/data_type=json/analytics_environment=testing/event_category=function/event_ds={EVENT_DS}/event_time={EVENT_TIME}/{SCALE_TEST_NAME}/\* \
+  --external_table_definition=table_test::batchId:STRING,eventType:STRING@NEWLINE_DELIMITED_JSON=gs://{GCLOUD_PROJECT_ID}-analytics/data_type=json/analytics_environment=testing/event_category=function/event_ds={EVENT_DS}/event_time={EVENT_TIME}/{SCALE_TEST_NAME}/\* \
   $QUERY
 
 # +---+-------+------------------+

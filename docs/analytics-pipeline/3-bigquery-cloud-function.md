@@ -69,19 +69,19 @@ Now let's boot our backfill batch script:
 ```bash
 # Trigger script!
 python ../../services/python/analytics-pipeline/src/dataflow/gcs-to-bq-backfill.py  \
-  --execution-environment=DataflowRunner \
-  --local-sa-key={LOCAL_SA_KEY_JSON_DATAFLOW} \
-  --gcs-bucket={GCLOUD_PROJECT_ID}-analytics \
-  --topic=cloud-function-gcs-to-bq-topic \
-  --gcp=GCLOUD_PROJECT_ID}
-  --analytics-environment=testing \
-  --event-category=cold \
-  --event-ds-start=2019-01-01 \
-  --event-ds-stop=2019-01-31 \
-  --event-time=0-8
+  --execution-environment=DataflowRunner \ # Required
+  --local-sa-key={LOCAL_SA_KEY_JSON_DATAFLOW} \ # Required
+  --gcs-bucket={GCLOUD_PROJECT_ID}-analytics \ # Required
+  --topic=cloud-function-gcs-to-bq-topic \ # Required
+  --gcp={GCLOUD_PROJECT_ID} # Required
+  --analytics-environment=testing \ # Optional, if omitted will pick up all environments: {testing, development, staging, development, production, live}
+  --event-category=cold \ # Required
+  --event-ds-start=2019-01-01 \ # Optional, if omitted will default to: 2019-01-01
+  --event-ds-stop=2019-01-31 \ # Optional, if omitted will default to: 2020-12-31
+  --event-time=0-8 # Optional, if omitted will pick up all times: {0-8, 8-16, 16-24}
 ```
 
-Note that we are simply following:
+Note that we are simply following the GCS file tree:
 
 > gs://{gcs-bucket}/data_type=json/analytics_environment={testing|development|staging|production|live}/event_category={!function}/event_ds={yyyy-mm-dd}/event_time={0-8|8-16|16-24}/*
 

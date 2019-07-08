@@ -17,7 +17,7 @@ from apache_beam.options.pipeline_options import SetupOptions
 
 from common.storage import datesGenerator, gcsFileListGenerator
 from common.bigquery import provisionBigQuery, queryGenerator
-from common.classes import getGcsFileList
+from common.classes import getGcsFileList, WriteToPubSub
 
 import argparse
 
@@ -50,36 +50,6 @@ elif args.topic == 'cloud-function-gcs-to-bq-topic':
     method = 'function'
 else:
     method = 'unknown'
-
-class WriteToPubSub(beam.DoFn):
-
-    def process(self, element, job_name, topic, suffix):
-        from apache_beam.io.gcp import gcsio
-        from google.cloud import pubsub_v1
-
-        gcs = gcsio.GcsIO()
-        prefix = 'gs://{gcs_bucket}/data_type=dataflow/batch/output/{job_name}/parselist'.format(gcs_bucket = args.gcs_bucket, job_name = job_name)
-        file_size_dict = gcs.list_prefix(prefix)
-        file_list = file_size_dict.keys()
-
-        # https://cloud.google.com/pubsub/docs/publisher#pubsub-publish-message-python
-        client_ps = pubsub_v1.PublisherClient(
-          batch_settings = pubsub_v1.types.BatchSettings(max_messages = 1000, max_bytes = 5120)
-          )
-        topic = client_ps.topic_path(args.gcp, topic + suffix)
-
-        for i in file_list:
-            gcs_uri_list_read = gcs.open(filename = i, mode = 'r').read().decode('utf-8').split('\n')
-            # With each **file** written into GCS by beam.io.WriteToText(), a PDone is returned & WriteToPubSub() is triggered!
-            gcs_uri_list_delete = gcs.delete(path = i)
-
-            for gcs_uri in gcs_uri_list_read:
-                gcs_bucket = gcs_uri[5:].split('/')[0]
-                name = '/'.join(gcs_uri[5:].split('/')[1:])
-                if name != "" and gcs_bucket != "":
-                    data = '{"name":"%s","bucket":"%s"}' % (name, gcs_bucket)
-                    future = client_ps.publish(topic, data = data.encode('utf-8'))
-                    yield (topic, data)
 
 def run():
     from common.parser import pathParser, typeParser, timeParser
@@ -140,7 +110,7 @@ def run():
     # Write to BigQuery
     logsList = (parseList  | 'addParseInitiatedInfo' >> beam.Map(lambda x: {'job_name': job_name, 'processed_timestamp': time.time(), 'batch_id': hashlib.md5('/'.join(x.split('/')[-2:]).encode('utf-8')).hexdigest(), 'analytics_environment': pathParser(x, 'analytics_environment='),
                                                                             'event_category': pathParser(x, 'event_category='), 'event_ds': pathParser(x, 'event_ds='), 'event_time': pathParser(x, 'event_time='), 'event': 'parse_initiated', 'file_path': x})
-                           | 'writeParseInitiated' >> beam.io.WriteToBigQuery(table = 'events_logs_stream_backfill' + suffix_bq, dataset = 'logs' + suffix_bq, project = args.gcp, method = 'FILE_LOADS',
+                           | 'writeParseInitiated' >> beam.io.WriteToBigQuery(table = 'events_logs_' + method + '_backfill' + suffix_bq, dataset = 'logs' + suffix_bq, project = args.gcp, method = 'FILE_LOADS',
                                                                               create_disposition = beam.io.gcp.bigquery.BigQueryDisposition.CREATE_IF_NEEDED,
                                                                               write_disposition = beam.io.gcp.bigquery.BigQueryDisposition.WRITE_APPEND,
                                                                               insert_retry_strategy = beam.io.gcp.bigquery_tools.RetryStrategy.RETRY_ON_TRANSIENT_ERROR,
