@@ -2,8 +2,8 @@
 
 In this section we will scale test our analytics pipeline.
 
-1. [Write Events](1---write-events)
-2. [Verify Events](2---verify-events)
+1. [Write Events](#1---write-events)
+2. [Verify Events](#2---verify-events)
 
 ## (1) - Write Events
 
@@ -41,7 +41,7 @@ python ../../services/python/analytics-pipeline/src/endpoint/scale-test.py \
   --n=10000
 ```
 
-After the script finishes, copy the {SCALE_TEST_NAME}, {EVENT_DS} & {EVENT_TIME} from the output.
+After the script finishes, copy {**SCALE_TEST_NAME**, **EVENT_DS**, **EVENT_TIME**} from the terminal output.
 
 ## (2) - Verify Events
 

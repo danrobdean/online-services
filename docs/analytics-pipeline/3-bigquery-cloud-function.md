@@ -36,7 +36,12 @@ curl --request POST \
 
 The situation might arise that there are events in GCS that you wish to still ingest into native BigQuery storage using the Cloud Function. This could be because you either dropped your events table in BigQuery, or for instance did not write these events with the correct parameter setting (`..&event_category=function..`).
 
-For these situation we provide a batch script which you can point to 1) files in GCS & 2) a Pub/Sub Topic that should receive notifications about the existence of these files (in our case: the Pub/Sub Topic which feeds our analytics Cloud Function). The script is written using [Apache Beam's Python SDK](https://beam.apache.org/documentation/sdks/python/), and executed on [Cloud Dataflow](https://cloud.google.com/dataflow/). As these backfills are executed on an ad-hoc basis (only when required) we do not package it up and/or deploy it into production.
+For these situation we provide a batch script which you can point to:
+
+1. Files in GCS.
+2. A Pub/Sub Topic that should receive notifications about the existence of these files (in our case: the Pub/Sub Topic which feeds our analytics Cloud Function).
+
+The script is written using [Apache Beam's Python SDK](https://beam.apache.org/documentation/sdks/python/), and executed on [Cloud Dataflow](https://cloud.google.com/dataflow/). As these backfills are executed on an ad-hoc basis (only when required) we do not package it up and/or deploy it into production.
 
 First, navigate to the [service account overview in the Cloud Console](https://console.cloud.google.com/iam-admin/serviceaccounts) and store a JSON key from the service account named **Dataflow Batch** locally on your machine + write down the file path: {**LOCAL_SA_KEY_JSON_DATAFLOW**}
 
