@@ -1,34 +1,50 @@
-## Cloud Endpoint
+# Cloud Endpoint
 
-### (0) - Running the Analytics Endpoint Locally
+This part covers the creation of an endpoint to forward analytics data to, which acts as the start of the analytics pipeline.
 
-First, let's create a virtual Python environment & install dependencies.
+- The first section will outline how to test, verify & deploy the endpoint onto Kubernetes.
+- The second section will cover how to actually use the 2 endpoint methods: **event** & **file**.
+- The third section will show how to do some optional cleanup on Kubernetes.
+
+## (1) - Testing, Verifying & Deploying the Analytics Endpoint
+
+### (1.1) - Triggering the Server Code Directly
+
+We will start by calling the script directly via the command line, which will start a local running execution of our endpoint.
+
+_Note: The below are UNIX based commands, if you run Windows best skip this step & go straight to (1)._
 
 ```bash
-# Create a Python 3 virtual environment
+# Create a Python 3 virtual environment:
 python3 -m venv venv-endpoint
 
-# Activate virtual environment
+# Activate virtual environment:
 source venv-endpoint/bin/activate
 
-# Upgrade Python's package manager pip
+# Upgrade Python's package manager pip:
 pip install --upgrade pip
 
-# Install dependencies with pip
+# Install dependencies with pip:
 pip install -r ../../services/python/analytics-pipeline/src/requirements/endpoint.txt
 
-# deactivate # exit virtual environment
-
-# Set environment variables:
-export GCP="logical-flame-194710"
-export BUCKET_NAME="logical-flame-194710-analytics"
+# Set required environment variables
+export GCP="logical-flame-194710" # {GCP_ID}
+export BUCKET_NAME="logical-flame-194710-analytics" # {GCP_ID}-analytics
 export SECRET_JSON="/Users/loek/secrets/logical-flame-194710/analytics-gcs-writer.json" # {LOCAL_SA_KEY_JSON}
 export SECRET_P12="/Users/loek/secrets/logical-flame-194710/analytics-gcs-writer.p12" # {LOCAL_SA_KEY_P12}
-export EMAIL="analytics-gcs-writer@logical-flame-194710.iam.gserviceaccount.com"
+export EMAIL="analytics-gcs-writer@logical-flame-194710.iam.gserviceaccount.com" # analytics-gcs-writer@{GCP_ID}.iam.gserviceaccount.com
 
 # Trigger script!
 python ../../services/python/analytics-pipeline/src/endpoint/main.py
+# Press Cntrl + C in order to halt execution of the endpoint.
 
+# Exit virtual environment:
+# deactivate
+```
+
+In a different terminal window, submit the following 2 `curl` POST requests in order to verify the endpoint is working as expected:
+
+```bash
 # Verify v1/event method is working:
 curl --request POST \
   --header "content-type:application/json" \
@@ -41,11 +57,12 @@ curl --request POST \
   --data "{\"content_type\":\"text/plain\", \"md5_digest\": \"XKvMhvwrORVuxdX54FQEdg==\"}" \
   "http://0.0.0.0:8080/v1/file?key=local_so_does_not_matter&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"
 ```
-_Note: The above are UNIX based commands, if you run Windows best skip this step & go straight to (1)._
 
-### (1) - Containerizing the Analytics Endpoint
+If both requests returned proper JSON, without any error messaging, the endpoint is working as anticipated! :tada:
 
-#### (1.0) - Building the Analytics Endpoint Container
+### (1.2) - Containerizing the Analytics Endpoint
+
+Next we are going containerize our analytics endpoint. We will then verify it is still working by executing the container locally. Once we have verified this is the case, we will push the container to a remote location, in this case Google Container Registry (GCR). This stages the container to be deployed on top of Google's fully managed Kubernetes solution: Google Kubernetes Engine (GKE).
 
 ```bash
 # Build container:
@@ -66,7 +83,7 @@ docker run -it \
 # Tip - Type & submit 'exit' to stop the container
 ```
 
-#### (1.1) - Testing the Analytics Endpoint Container Locally
+Now let's verify the container is working as expected, by running it locally:
 
 ```bash
 # Run container locally:
@@ -80,9 +97,11 @@ docker run \
   -v /Users/loek/secrets/logical-flame-194710/analytics-gcs-writer.p12:/secrets/p12/analytics-gcs-writer.p12 \
   -p 8080:8080 \
   gcr.io/logical-flame-194710/analytics-endpoint:latest
+```
 
-# In a different terminal window, submit curl POST requests..
+As before, in a different terminal window, submit the follow 2 curl POST requests:
 
+```bash
 # Verify v1/event method is working:
 curl --request POST \
   --header "content-type:application/json" \
@@ -100,7 +119,7 @@ docker ps # Copy {CONTAINER_ID}
 docker kill {CONTAINER_ID}
 ```
 
-#### (1.2) - Pushing the Analytics Endpoint Container to Google Container Registry (GCR)
+In case the requests were successful, we can now push the container to GCR.
 
 ```bash
 # Make sure you are in the right project
@@ -114,7 +133,9 @@ docker push gcr.io/logical-flame-194710/analytics-endpoint:latest
 gcloud container images list
 ```
 
-#### (1.3) - Deploy Analytics Endpoint Container onto Kubernetes with Cloud Endpoints
+### (1.3) - Deploying Analytics Endpoint Container onto GKE with Cloud Endpoints
+
+At this point we have a working container hosted in GCR, which GKE can pull containers from. We will now deploy our analytics endpoint on top of GKE.
 
 ```bash
 # Make sure you have the credentials to talk to the right cluster:
@@ -122,10 +143,10 @@ gcloud container clusters get-credentials {K8S_CLUSTER_NAME} --zone {GCLOUD_ZONE
 gcloud container clusters get-credentials os-analytics-test --zone europe-west1-b
 
 # Or if you already do - that you're configured to talk to the right cluster:
-kubectl config use-context gke_logical-flame-194710_europe-west1-b_os-analytics-test
+kubectl config use-context {K8S_CONTEXT_NAME}
 ```
 
-Now **make all appropriate edits to the files in [../../services/k8s/analytics-endpoint/](https://github.com/improbable/online-services/tree/analytics/services/k8s/analytics-endpoint)** & afterwards deploy to Kubernetes:
+Now **make all appropriate edits to the files in [../../services/k8s/analytics-endpoint/](https://github.com/improbable/online-services/tree/analytics/services/k8s/analytics-endpoint)** & afterwards deploy them to Kubernetes:
 
 ```bash
 kubectl apply -f ../../services/k8s/analytics-endpoint
@@ -152,9 +173,7 @@ kubectl exec {POD_ID} -c {CONTAINER_NAME} -it bash
 # Where {CONTAINER_NAME} = analytics-deployment-server or analytics-deployment-endpoint
 ```
 
-#### (1.4) - Testing the Analytics Endpoint on Kubernetes
-
-Next, [get an API key for your GCP](https://cloud.google.com/endpoints/docs/openapi/get-started-kubernetes#create_an_api_key_and_set_an_environment_variable), which you need to pass via the **key** parameter in the url of your POST request: {GCP_API_KEY}. Besides this, change **logical-flame-194710** to your own {GCP_PROJECT_ID} in the destination URL of the curl request below. Note that is is currently [not possible to provision this one programmatically](https://issuetracker.google.com/issues/76227920). Also note that **it takes some time before API keys become fully functional, to be safe wait at least 10 minutes**.
+Next, [get an API key for your GCP](https://cloud.google.com/endpoints/docs/openapi/get-started-kubernetes#create_an_api_key_and_set_an_environment_variable), which you need to pass via the **key** parameter in the url of your POST request: {GCP_API_KEY}. Besides this, change **logical-flame-194710** to your own {GCP_PROJECT_ID} in the destination URL of the curl request below. Note that is is currently [not possible to provision this one programmatically](https://issuetracker.google.com/issues/76227920). Also note that **it takes some time before API keys become fully functional, to be safe wait at least 10 minutes** before attempting the below POST requests.
 
 ```bash
 # Verify v1/event method is working:
@@ -170,41 +189,59 @@ curl --request POST \
   "http://analytics.endpoints.logical-flame-194710.cloud.goog:80/v1/file?key=AIzaSyCP3Feg6_dLZ7sze9gsjhXRg7XFfPxKrl4&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"
 ```
 
-### (2) Using the Endpoint
+If both requests succeeded, this means you have now deployed your Analytics Endpoint! :confetti_ball:
+
+## (2) Using the Endpoint
 
 ### (2.0) - `/v1/event`
 
-Data that is POSTed to this endpoint will be piped into the **{GOOGLE-CLOUD-PROJECT-ID}-analytics** GCS bucket.
+This method enables you to store analytics events in your GCS analytics bucket. The method accepts JSON dicts (one for each event), either standalone or batched up in lists (recommended). Each POST request will create a file in GCS, with the event dictionaries newline delimited (in case a JSON list was POST'ed).
 
 The URL takes 6 parameters:
 
-- **key**: **Required** - must be tied to your GCP ([info](https://cloud.google.com/endpoints/docs/openapi/get-started-kubernetes#create_an_api_key_and_set_an_environment_variable)).
-- **analytics_environment**: Optional - if omitted, currently defaults to **development**, one of {**'testing'**, '**development**', '**staging**', '**production**', '**live**'}.
-- **event_category**: Optional - if omitted, currently defaults to **cold**.
-- **event_ds**: Optional - if omitted, currently defaults to the current UTC date in **YYYY-MM-DD**.
-- **event_time**: Optional - if omitted, currently defaults to current UTC time part, one of {**'0-8'**, **'8-16'**, **'16-24'**}.
-- **session_id**: Optional - if omitted, currently defaults to **session-id-not-available**.
+| Parameter             | Class    | Description |
+|-----------------------|------------------------|
+| key                   | Required | Must be tied to your GCP ([info](https://cloud.google.com/endpoints/docs/openapi/get-started-kubernetes#create_an_api_key_and_set_an_environment_variable)). |
+| analytics_environment | Optional | If omitted, currently defaults to **development**, otherwise must be one of {**'testing'**, '**development**', '**staging**', '**production**', '**live**'}. |
+| event_category        | Optional | If omitted, currently defaults to **cold**. |
+| event_ds              | Optional | If omitted, currently defaults to the current UTC date in **YYYY-MM-DD**. |
+| event_time            | Optional | If omitted, currently defaults to current UTC time part, otherwise must be one of {**'0-8'**, **'8-16'**, **'16-24'**}. |
+| session_id            | Optional | If omitted, currently defaults to **session-id-not-available**. |
 
 These `<parameters>` (except for **key**) influence where the data ends up in the GCS bucket:
 
 > gs://gcp-analytics-pipeline-events/data\_type={data\_type}/analytics\_environment={analytics\_environment}/event\_category={event\_category}/event\_ds={event\_ds}/event\_time={event\_time}/{session\_id}/{ts\_fmt}\-{int}'
 
-Note that data_type is determined automatically and can either be **json** (when valid JSON is POST'ed) or **unknown**. The fields **ts_fmt** & **int** are automatically set by the endpoint.
+Note that data_type is determined automatically and can either be **json** (when valid JSON is POST'ed) or **unknown** (otherwise). The fields **ts_fmt** & **int** are automatically set by the endpoint as well.
 
 #### (2.0.0) - Important: the event_category Parameter
 
 The **event_category** parameter is particularly **important**:
 
-- When set to **function** all data contained in the POST request will be **ingested into native BigQuery storage** using the Cloud Function we created when we deployed the analytics module with Terraform.
-- When set to **anything else** all data contained in the POST request will **arrive in GCS**, but will **not by default be ingested into native BigQuery storage**.
+- When set to **function** all data contained in the POST request will be **ingested into native BigQuery storage** using the Cloud Function we created when we deployed [the analytics module with Terraform]((https://github.com/improbable/online-services/tree/master/services/terraform)).
+- When set to **anything else** all data contained in the POST request will **arrive in GCS**, but will **not by default be ingested into native BigQuery storage**. This data can however still be accessed by BigQuery by using GCS as an external data source.
+
+#### (2.0.1) - The JSON Event Schema
+
+| Key              | Type    | Description |
+|------------------|------------------------
+| eventEnvironment | string  | One of  {**testing**, **development**, **staging**, **production**}. |
+| eventIndex       | integer | Increments with one with each event per eventSource, allows us to spot missing data. |
+| eventSource      | string  | Source of the event, e.g. worker type. |
+| eventClass       | string  | A higher order mnemonic classification of events (e.g. session). |
+| eventType        | string  | A mnemonic event identifier (e.g. session_start). |
+| sessionId        | string  | The session_id, which is unique per client/server session. |
+| buildVersion     | string  | Version of the build, should naturally sort from oldest to latest. |
+| eventTimestamp   | float   | The timestamp of the event, in unix time. |
+| eventAttributes  | dict    | Anything else relating to this particular event will be captured in this attribute as a nested JSON dictionary. |
 
 ### (2.1) - `/v1/file`
 
-This method allows you to write large files straight into GCS, without having to route the entire file contents via the Endpoint (which might otherwise overload it). The process entails requesting a signed URL which authorizes your server/client to write a specific file (based on its base64 encoded md5 hash) to a specific location in GCS within 30 minutes.
+This method allows you to write large files straight into GCS, without having to route the entire file contents via the Analytics Endpoint (which might otherwise overload it). The process entails requesting a signed URL which authorizes your server/client to write a specific file (based on its base64 encoded md5 hash) to a specific location in GCS within 30 minutes.
+
+Assuming you have a crashdump file called **worker-crashdump-test.gz**:
 
 ```bash
-# Assuming you have a crashdump file called worker-crashdump-test.gz..
-
 # Get the base64 encoded md5 hash:
 openssl md5 -binary worker-crashdump-test.gz | base64
 # > XKvMhvwrORVuxdX54FQEdg==
@@ -213,7 +250,7 @@ openssl md5 -binary worker-crashdump-test.gz | base64
 curl --request POST \
   --header 'content-type:application/json' \
   --data "{\"content_type\":\"text/plain\", \"md5_digest\": \"XKvMhvwrORVuxdX54FQEdg==\"}" \
-  "http://events-api-development.endpoints.logical-flame-194710.cloud.goog:80/v1/file?key=AIzaSyCP3Feg6_dLZ7sze9gsjhXRg7XFfPxKrl4&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"
+  "http://analytics.endpoints.logical-flame-194710.cloud.goog:80/v1/file?key=AIzaSyCP3Feg6_dLZ7sze9gsjhXRg7XFfPxKrl4&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"
 
 # Grab the signed URL & headers from the returned JSON dictionary (if successful) & write file directly into GCS within 30 minutes:
 curl \
@@ -223,20 +260,20 @@ curl \
   --data-binary '@worker-crashdump-test.gz'
 ```
 
-### (3) - Kubernetes Cleanup
+## (3) - GKE Cleanup
+
+In case you want remove your workloads from GKE, you can run the following commands:
 
 ```bash
-# Obtain list of all your deployments
+# Obtain list of all your deployments:
 # kubectl get deployments
 
 # Delete your deployment:
 # kubectl delete deployment {K8S_DEPLOYMENT_NAME}
-# kubectl delete deployment analytics-deployment
 
-# Obtain list of all your services
+# Obtain list of all your services:
 # kubectl get services
 
-# Delete your service
+# Delete your service:
 # kubectl delete service {K8S_SERVICE_NAME}
-# kubectl delete service analytics-service
 ```
