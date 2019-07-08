@@ -48,7 +48,7 @@ In a different terminal window, submit the following 2 `curl` POST requests in o
 # Verify v1/event method is working:
 curl --request POST \
   --header "content-type:application/json" \
-  --data "{\"message\":\"hello world\"}" \
+  --data "{\"eventSource\":\"client\",\"eventClass\":\"test\",\"eventType\":\"endpoint_local\",\"eventTimestamp\":1562599755,\"eventIndex\":6,\"sessionId\":\"f58179a375290599dde17f7c6d546d78\",\"buildVersion\":\"2.0.13\",\"eventEnvironment\":\"testing\",\"eventAttributes\":{\"playerId\": 12345678}}" \
   "http://0.0.0.0:8080/v1/event?key=local_so_does_not_matter&analytics_environment=testing&event_category=cold&session_id=f58179a375290599dde17f7c6d546d78"
 
 # Verify v1/file method is working:
@@ -105,7 +105,7 @@ As before, in a different terminal window, submit the follow 2 curl POST request
 # Verify v1/event method is working:
 curl --request POST \
   --header "content-type:application/json" \
-  --data "{\"message\":\"hello world\"}" \
+  --data "{\"eventSource\":\"client\",\"eventClass\":\"test\",\"eventType\":\"endpoint_local_containerized\",\"eventTimestamp\":1562599755,\"eventIndex\":6,\"sessionId\":\"f58179a375290599dde17f7c6d546d78\",\"buildVersion\":\"2.0.13\",\"eventEnvironment\":\"testing\",\"eventAttributes\":{\"playerId\": 12345678}}" \
   "http://0.0.0.0:8080/v1/event?key=local_so_does_not_matter&analytics_environment=testing&event_category=cold&session_id=f58179a375290599dde17f7c6d546d78"
 
 # Verify v1/file method is working:
@@ -156,7 +156,7 @@ Next, [get an API key for your GCP](https://cloud.google.com/endpoints/docs/open
 # Verify v1/event method is working:
 curl --request POST \
   --header "content-type:application/json" \
-  --data "{\"message\":\"hello world\"}" \
+  --data "{\"eventSource\":\"client\",\"eventClass\":\"test\",\"eventType\":\"endpoint_k8s_containerized\",\"eventTimestamp\":1562599755,\"eventIndex\":6,\"sessionId\":\"f58179a375290599dde17f7c6d546d78\",\"buildVersion\":\"2.0.13\",\"eventEnvironment\":\"testing\",\"eventAttributes\":{\"playerId\": 12345678}}" \
   "http://analytics.endpoints.{GCLOUD_PROJECT_ID}.cloud.goog:80/v1/event?key={GCP_API_KEY}&analytics_environment=testing&event_category=cold&session_id=f58179a375290599dde17f7c6d546d78"
 
 # Verify v1/file method is working:
@@ -172,17 +172,25 @@ If both requests succeeded, this means you have now deployed your Analytics Endp
 
 ### (2.1) - `/v1/event`
 
-This method enables you to store analytics events in your GCS analytics bucket. The method accepts JSON dicts (one for each event), either standalone or batched up in lists (recommended). Each POST request will create a file in GCS, with the event dictionaries newline delimited (in case a JSON list was POST'ed).
+This method enables you to store analytics events in your GCS analytics bucket. The method:
+
+- Accepts JSON dicts (one for each event), either standalone or batched up in lists (recommended).
+- Augments JSON events with **batchId**, **eventId**, **receivedTimestamp** & **analyticsEnvironment**.
+- Writes received JSON data as newline delimited JSON event files in GCS, which facilitates easy ingestion into BigQuery.
+- The event’s location in GCS is co-determined through endpoint URL parameters. These in turn determine whether the events are ingested into native BigQuery storage (vs. GCS as external storage) by default.
+- Also accepts non-JSON data.
+
+#### (2.1.1) - URL Parameters
 
 The URL takes 6 parameters:
 
 | Parameter             | Class    | Description |
 |-----------------------|----------|-------------|
 | key                   | Required | Must be tied to your GCP ([info](https://cloud.google.com/endpoints/docs/openapi/get-started-kubernetes#create_an_api_key_and_set_an_environment_variable)). |
-| analytics_environment | Optional | If omitted, currently defaults to **development**, otherwise must be one of {**'testing'**, '**development**', '**staging**', '**production**', '**live**'}. |
+| analytics_environment | Optional | If omitted, currently defaults to **development**, otherwise must be one of {**testing**, **development**, **staging**, **production**, **live**}. |
 | event_category        | Optional | If omitted, currently defaults to **cold**. |
 | event_ds              | Optional | If omitted, currently defaults to the current UTC date in **YYYY-MM-DD**. |
-| event_time            | Optional | If omitted, currently defaults to current UTC time part, otherwise must be one of {**'0-8'**, **'8-16'**, **'16-24'**}. |
+| event_time            | Optional | If omitted, currently defaults to current UTC time part, otherwise must be one of {**0-8**, **8-16**, **16-24**}. |
 | session_id            | Optional | If omitted, currently defaults to **session-id-not-available**. |
 
 These `<parameters>` (except for **key**) influence where the data ends up in the GCS bucket:
@@ -191,18 +199,18 @@ These `<parameters>` (except for **key**) influence where the data ends up in th
 
 Note that data_type is determined automatically and can either be **json** (when valid JSON is POST'ed) or **unknown** (otherwise). The fields **ts_fmt** & **int** are automatically set by the endpoint as well.
 
-#### (2.1.1) - Important: the event_category Parameter
-
-The **event_category** parameter is particularly **important**:
+Note that the **event_category** parameter is particularly **important**:
 
 - When set to **function** all data contained in the POST request will be **ingested into native BigQuery storage** using the Cloud Function we created when we deployed [the analytics module with Terraform]((https://github.com/improbable/online-services/tree/master/services/terraform)).
 - When set to **anything else** all data contained in the POST request will **arrive in GCS**, but will **not by default be ingested into native BigQuery storage**. This data can however still be accessed by BigQuery by using GCS as an external data source.
 
 #### (2.1.2) - The JSON Event Schema
 
+Each analytics event, which is a JSON dictionary, should adhere to the following JSON schema:
+
 | Key              | Type    | Description |
 |------------------|---------|-------------|
-| eventEnvironment | string  | One of  {**testing**, **development**, **staging**, **production**}. |
+| eventEnvironment | string  | One of  {**testing**, **development**, **staging**, **production**, **live**}. |
 | eventIndex       | integer | Increments with one with each event per eventSource, allows us to spot missing data. |
 | eventSource      | string  | Source of the event, e.g. worker type. |
 | eventClass       | string  | A higher order mnemonic classification of events (e.g. session). |
@@ -211,6 +219,8 @@ The **event_category** parameter is particularly **important**:
 | buildVersion     | string  | Version of the build, should naturally sort from oldest to latest. |
 | eventTimestamp   | float   | The timestamp of the event, in unix time. |
 | eventAttributes  | dict    | Anything else relating to this particular event will be captured in this attribute as a nested JSON dictionary. |
+
+The idea is that all **root keys of the dictionary** are **always present for any event**. Anything custom to a particular event should be nested within eventAttributes. If there is nothing to nest it should be an empty dict (but still present). In case a server-side event is triggered around a player, ensure the player_id in captured in eventAttributes. For client-side events, as long as we have a log-in event which pairs up the player_id with the client's sessionId, we can always backtrack which other client-side events belonged to a player. Note that player_id is not a root field of our events, because it will not always be present for any event (e.g. AI induced events, client-side events pre-login, etc.).
 
 ### (2.2) - `/v1/file`
 
