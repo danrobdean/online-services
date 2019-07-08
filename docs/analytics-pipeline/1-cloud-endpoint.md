@@ -2,9 +2,9 @@
 
 This part covers the creation of an endpoint to forward analytics data to, which acts as the start of the analytics pipeline.
 
-[(1) - Initiating, Verifying & Deploying the Analytics Endpoint](#(1---initiating-verifying-deploying-the-analytics-endpoint)
-[(2) - How to Use the Endpoint](#2---how-to-use-the-endpoint)
-[(3) - GKE Cleanup](#3---gke-cleanup)
+1. [Initiating, Verifying & Deploying the Analytics Endpoint](#1---initiating-verifying--deploying-the-analytics-endpoint)
+2. [How to Use the Endpoint](#2---how-to-use-the-endpoint)
+3. [GKE Cleanup](#3---gke-cleanup-debug)
 
 ## (1) - Initiating, Verifying & Deploying the Analytics Endpoint
 
@@ -28,8 +28,8 @@ pip install --upgrade pip
 pip install -r ../../services/python/analytics-pipeline/src/requirements/endpoint.txt
 
 # Set required environment variables
-export GCP="logical-flame-194710" # {GCP_ID}
-export BUCKET_NAME="logical-flame-194710-analytics" # {GCP_ID}-analytics
+export GCP="logical-flame-194710" # {GCLOUD_PROJECT_ID}
+export BUCKET_NAME="logical-flame-194710-analytics" # {GCLOUD_PROJECT_ID}-analytics
 export SECRET_JSON="/Users/loek/secrets/logical-flame-194710/analytics-gcs-writer.json" # {LOCAL_SA_KEY_JSON}
 export SECRET_P12="/Users/loek/secrets/logical-flame-194710/analytics-gcs-writer.p12" # {LOCAL_SA_KEY_P12}
 export EMAIL="analytics-gcs-writer@logical-flame-194710.iam.gserviceaccount.com" # analytics-gcs-writer@{GCP_ID}.iam.gserviceaccount.com
@@ -58,11 +58,11 @@ curl --request POST \
   "http://0.0.0.0:8080/v1/file?key=local_so_does_not_matter&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"
 ```
 
-If both requests returned proper JSON, without any error messaging, the endpoint is working as anticipated! :tada:
+If both requests returned proper JSON, without any error messages, the endpoint is working as anticipated! :tada:
 
 ### (1.2) - Containerizing the Analytics Endpoint
 
-Next we are going containerize our analytics endpoint. We will then verify it is still working by executing the container locally. Once we have verified this is the case, we will push the container to a remote location, in this case Google Container Registry (GCR). This stages the container to be deployed on top of Google's fully managed Kubernetes solution: Google Kubernetes Engine (GKE).
+Next we are going containerize our analytics endpoint using [Docker](https://www.docker.com/). We will then verify it is still working by executing the container locally. Once we have verified this is the case, we will push the container to a remote location, in this case [Google Container Registry (GCR)](https://cloud.google.com/container-registry/). This stages the container to be deployed on top of Google's fully managed Kubernetes solution: [Google Kubernetes Engine (GKE)](https://cloud.google.com/kubernetes-engine/).
 
 ```bash
 # Build container:
@@ -119,7 +119,7 @@ docker ps # Copy {CONTAINER_ID}
 docker kill {CONTAINER_ID}
 ```
 
-In case the requests were successful, we can now push the container to GCR.
+In case the requests were successful, we can now push the container to GCR:
 
 ```bash
 # Make sure you are in the right project
@@ -127,7 +127,6 @@ gcloud config set project {GCP_PROJECT_ID}
 
 # Upload container to Google Container Registry (GCR)
 docker push gcr.io/{GCP_PROJECT_ID}/os-analytics-endpoint:latest
-docker push gcr.io/logical-flame-194710/analytics-endpoint:latest
 
 # Verify your image is uploaded
 gcloud container images list
@@ -146,31 +145,10 @@ gcloud container clusters get-credentials os-analytics-test --zone europe-west1-
 kubectl config use-context {K8S_CONTEXT_NAME}
 ```
 
-Now **make all appropriate edits to the files in [../../services/k8s/analytics-endpoint/](https://github.com/improbable/online-services/tree/analytics/services/k8s/analytics-endpoint)** & afterwards deploy them to Kubernetes:
+Now **make all appropriate edits to the files in [../../services/k8s/analytics-endpoint/](https://github.com/improbable/online-services/tree/analytics/services/k8s/analytics-endpoint)** & **afterwards** deploy them to Kubernetes:
 
 ```bash
 kubectl apply -f ../../services/k8s/analytics-endpoint
-```
-
-The following commands can help you check what is happening & potentially debug any issues. Note a pod is generally a group of containers running together. In our case, each pod contains two containers: one running our custom server code & one public Google container that runs everything related to Cloud Endpoints. We are running 3 replicas of our pod together in a single deployment. This means we have 2 x 3 = 6 containers running in our deployment.
-
-```bash
-# Show me all deployments:
-kubectl get deployments
-
-# Show me all pods:
-kubectl get pods
-
-# View details of pods:
-kubectl describe pod {POD_ID}
-
-# Show logs of a specific container:
-kubectl logs {POD_ID} {CONTAINER_NAME}
-
-# Step inside running container
-kubectl exec {POD_ID} -c {CONTAINER_NAME} -it bash
-
-# Where {CONTAINER_NAME} = analytics-deployment-server or analytics-deployment-endpoint
 ```
 
 Next, [get an API key for your GCP](https://cloud.google.com/endpoints/docs/openapi/get-started-kubernetes#create_an_api_key_and_set_an_environment_variable), which you need to pass via the **key** parameter in the url of your POST request: {GCP_API_KEY}. Besides this, change **logical-flame-194710** to your own {GCP_PROJECT_ID} in the destination URL of the curl request below. Note that is is currently [not possible to provision this one programmatically](https://issuetracker.google.com/issues/76227920). Also note that **it takes some time before API keys become fully functional, to be safe wait at least 10 minutes** before attempting the below POST requests.
@@ -260,20 +238,41 @@ curl \
   --data-binary '@worker-crashdump-test.gz'
 ```
 
-## (3) - GKE Cleanup
+## (3) - GKE Cleanup & Debug
 
 In case you want remove your workloads from GKE, you can run the following commands:
 
 ```bash
 # Obtain list of all your deployments:
-# kubectl get deployments
+kubectl get deployments
 
 # Delete your deployment:
-# kubectl delete deployment {K8S_DEPLOYMENT_NAME}
+kubectl delete deployment {K8S_DEPLOYMENT_NAME}
 
 # Obtain list of all your services:
-# kubectl get services
+kubectl get services
 
 # Delete your service:
-# kubectl delete service {K8S_SERVICE_NAME}
+kubectl delete service {K8S_SERVICE_NAME}
+```
+
+The following commands can help you check what is happening & potentially debug any issues. Note a pod is generally a group of containers running together. In our case, each pod contains two containers: one running our custom server code & one public Google container that runs everything related to Cloud Endpoints. We are running 3 replicas of our pod together in a single deployment. This means we have 2 x 3 = 6 containers running in our deployment.
+
+```bash
+# Show me all deployments:
+kubectl get deployments
+
+# Show me all pods:
+kubectl get pods
+
+# View details of pods:
+kubectl describe pod {POD_ID}
+
+# Show logs of a specific container:
+kubectl logs {POD_ID} {CONTAINER_NAME}
+
+# Step inside running container
+kubectl exec {POD_ID} -c {CONTAINER_NAME} -it bash
+
+# Where {CONTAINER_NAME} = analytics-deployment-server or analytics-deployment-endpoint
 ```
