@@ -2,6 +2,8 @@
 
 This part covers the creation of an endpoint to forward analytics data to, which acts as the start of the analytics pipeline.
 
+- [(1) - Testing, Verifying & Deploying the Analytics Endpoint](#\(1\)-\--testing-verifying-deploying-the-analytics-endpoint)
+- [(2) Using the Endpoint](#\(2\)-\--using-the-endpoint)
 - The first section will outline how to test, verify & deploy the endpoint onto Kubernetes.
 - The second section will cover how to actually use the 2 endpoint methods: **event** & **file**.
 - The third section will show how to do some optional cleanup on Kubernetes.
@@ -191,7 +193,7 @@ curl --request POST \
 
 If both requests succeeded, this means you have now deployed your Analytics Endpoint! :confetti_ball:
 
-## (2) Using the Endpoint
+## (2) - Using the Endpoint
 
 ### (2.0) - `/v1/event`
 
