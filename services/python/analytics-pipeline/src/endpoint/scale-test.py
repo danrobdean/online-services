@@ -2,15 +2,15 @@
 # Python 3.7
 
 # python src/scale-test-local.py \
-#   --gcp-secret-path=/Users/loek/secrets/logical-flame-194710/event-gcs-writer.json \
-#   --host=http://events-api-testing.endpoints.logical-flame-194710.cloud.goog:80/ \
-#   --api-key=AIzaSyCP3Feg6_dLZ7sze9gsjhXRg7XFfPxKrl4 \
-#   --bucket-name=gcp-analytics-pipeline-events \
+#   --gcp-secret-path={LOCAL_SA_KEY_JSON} \
+#   --host=http://events-api-testing.endpoints.{GCLOUD_PROJECT_ID}.cloud.goog:80/ \
+#   --api-key={GCP_API_KEY} \
+#   --bucket-name={GCLOUD_PROJECT_ID}-analytics \
 #   --scale-test-name=scale-test \
 #   --event-category=scale-test \
 #   --analytics-environment=testing \
 #   --pool-size=30 \
-#   --n=1000
+#   --n=10
 
 from multiprocessing.pool import ThreadPool as Pool
 from google.cloud import storage

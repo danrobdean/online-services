@@ -3,10 +3,10 @@
 
 # python src/gcs-to-bq-backfill.py \
 #  --execution-environment=DataflowRunner \
-#  --local-sa-key=/Users/loek/secrets/logical-flame-194710/dataflow-gcs-to-bq-stream.json \
-#  --gcs-bucket=gcp-analytics-pipeline-events \
-#  --topic=analytics-gcs-topic-dataflow \
-#  --gcp=logical-flame-194710
+#  --local-sa-key={LOCAL_SA_KEY_JSON_DATAFLOW} \
+#  --gcs-bucket={GCLOUD_PROJECT_ID}-analytics \
+#  --topic=cloud-function-gcs-to-bq-topic \
+#  --gcp={GCLOUD_PROJECT_ID}
 
 from __future__ import absolute_import
 import apache_beam as beam
@@ -44,9 +44,9 @@ if args.event_ds_start > args.event_ds_stop:
     print('Error: ds_start cannot be later than ds_stop!')
     sys.exit()
 
-if args.topic == 'analytics-gcs-topic-dataflow':
+if args.topic == 'dataflow-gcs-to-bq-topic':
     method = 'stream'
-elif args.topic == 'analytics-gcs-topic-cloud-function':
+elif args.topic == 'cloud-function-gcs-to-bq-topic':
     method = 'function'
 else:
     method = 'unknown'
@@ -58,7 +58,7 @@ class WriteToPubSub(beam.DoFn):
         from google.cloud import pubsub_v1
 
         gcs = gcsio.GcsIO()
-        prefix = 'gs://{bucket_name}/data_type=dataflow/batch/output/{job_name}/parselist'.format(bucket_name = args.gcs_bucket, job_name = job_name)
+        prefix = 'gs://{gcs_bucket}/data_type=dataflow/batch/output/{job_name}/parselist'.format(gcs_bucket = args.gcs_bucket, job_name = job_name)
         file_size_dict = gcs.list_prefix(prefix)
         file_list = file_size_dict.keys()
 
@@ -74,10 +74,10 @@ class WriteToPubSub(beam.DoFn):
             gcs_uri_list_delete = gcs.delete(path = i)
 
             for gcs_uri in gcs_uri_list_read:
-                bucket_name = gcs_uri[5:].split('/')[0]
+                gcs_bucket = gcs_uri[5:].split('/')[0]
                 name = '/'.join(gcs_uri[5:].split('/')[1:])
-                if name != "" and bucket_name != "":
-                    data = '{"name":"%s","bucket":"%s"}' % (name, bucket_name)
+                if name != "" and gcs_bucket != "":
+                    data = '{"name":"%s","bucket":"%s"}' % (name, gcs_bucket)
                     future = client_ps.publish(topic, data = data.encode('utf-8'))
                     yield (topic, data)
 
@@ -103,8 +103,8 @@ def run():
       method = method, name_env = name_env, event_category = args.event_category, event_ds_start = args.event_ds_start, event_ds_stop = args.event_ds_stop, event_time = name_time, ts = str(int(time.time())), suffix = suffix)
     pipeline_options = po.from_dictionary({
       'project': args.gcp,
-      'staging_location': 'gs://{bucket_name}/data_type=dataflow/batch/staging/{job_name}/'.format(bucket_name = args.gcs_bucket, job_name = job_name),
-      'temp_location': 'gs://{bucket_name}/data_type=dataflow/batch/temp/{job_name}/'.format(bucket_name = args.gcs_bucket, job_name = job_name),
+      'staging_location': 'gs://{gcs_bucket}/data_type=dataflow/batch/staging/{job_name}/'.format(gcs_bucket = args.gcs_bucket, job_name = job_name),
+      'temp_location': 'gs://{gcs_bucket}/data_type=dataflow/batch/temp/{job_name}/'.format(gcs_bucket = args.gcs_bucket, job_name = job_name),
       'runner': args.execution_environment, # {DirectRunner, DataflowRunner}
       'setup_file': args.setup_file,
       'service_account_email': 'dataflow-gcs-to-bq-stream@{gcp_project_id}.iam.gserviceaccount.com'.format(gcp_project_id = args.gcp),
@@ -117,7 +117,7 @@ def run():
                       | 'getGcsFileList' >> beam.ParDo(getGcsFileList())
                       | 'GcsListPairWithOne' >> beam.Map(lambda x: (x, 1)))
 
-    # fileListGcs | 'dumpGCSFileList' >> beam.io.WriteToText('gs://{bucket_name}/data_type=dataflow/batch/output/{job_name}/0_fileListGcs'.format(bucket_name = args.gcs_bucket, job_name = job_name)) # Cloud-Debug [when using DataflowRunner]
+    # fileListGcs | 'dumpGCSFileList' >> beam.io.WriteToText('gs://{gcs_bucket}/data_type=dataflow/batch/output/{job_name}/0_fileListGcs'.format(gcs_bucket = args.gcs_bucket, job_name = job_name)) # Cloud-Debug [when using DataflowRunner]
     # fileListGcs | 'dumpGCSFileList' >> beam.io.WriteToText('local_debug/{job_name}/0_fileListGcs'.format(job_name = job_name)) # Local-Debug [when using DirectRunner]
 
     fileListBq = (p1 | 'parseBqFileList' >> beam.io.Read(beam.io.BigQuerySource(
@@ -126,7 +126,7 @@ def run():
                         use_standard_sql = True))
                      | 'bqListPairWithOne' >> beam.Map(lambda x: (x['file_path'], 1)))
 
-    # fileListBq | 'dumpBQFileList' >> beam.io.WriteToText('gs://{bucket_name}/data_type=dataflow/batch/output/{job_name}/1_fileListBq'.format(bucket_name = args.gcs_bucket, job_name = job_name)) # Cloud-Debug [when using DataflowRunner]
+    # fileListBq | 'dumpBQFileList' >> beam.io.WriteToText('gs://{gcs_bucket}/data_type=dataflow/batch/output/{job_name}/1_fileListBq'.format(gcs_bucket = args.gcs_bucket, job_name = job_name)) # Cloud-Debug [when using DataflowRunner]
     # fileListBq | 'dumpBQFileList' >> beam.io.WriteToText('local_debug/{job_name}/1_fileListBq'.format(job_name = job_name)) # Local-Debug [when using DirectRunner]
 
     parseList = ({'fileListGcs': fileListGcs, 'fileListBq': fileListBq}
@@ -134,7 +134,7 @@ def run():
                   | 'unionMinusIntersect' >> beam.Filter(lambda x: (len(x[1]['fileListGcs']) == 1 and len(x[1]['fileListBq']) == 0))
                   | 'extractKeysParseList' >> beam.Map(lambda x: x[0]))
 
-    # parseList | 'dumpParseList' >> beam.io.WriteToText('gs://{bucket_name}/data_type=dataflow/batch/output/{job_name}/2_parseList'.format(bucket_name = args.gcs_bucket, job_name = job_name)) # Cloud-Debug [when using DataflowRunner]
+    # parseList | 'dumpParseList' >> beam.io.WriteToText('gs://{gcs_bucket}/data_type=dataflow/batch/output/{job_name}/2_parseList'.format(gcs_bucket = args.gcs_bucket, job_name = job_name)) # Cloud-Debug [when using DataflowRunner]
     # parseList | 'dumpParseList' >> beam.io.WriteToText('local_debug/{job_name}/2_parseList'.format(job_name = job_name)) # Local-Debug [when using DirectRunner]
 
     # Write to BigQuery
@@ -146,14 +146,14 @@ def run():
                                                                               insert_retry_strategy = beam.io.gcp.bigquery_tools.RetryStrategy.RETRY_ON_TRANSIENT_ERROR,
                                                                               schema = 'job_name:STRING,processed_timestamp:TIMESTAMP,batch_id:STRING,analytics_environment:STRING,event_category:STRING,event_ds:DATE,event_time:STRING,event:STRING,file_path:STRING'))
 
-    # logsList | 'dumpParseInitiatedList' >> beam.io.WriteToText('gs://{bucket_name}/data_type=dataflow/batch/output/{job_name}/3_logsList'.format(bucket_name = args.gcs_bucket, job_name = job_name)) # Cloud-Debug [when using DataflowRunner]
+    # logsList | 'dumpParseInitiatedList' >> beam.io.WriteToText('gs://{gcs_bucket}/data_type=dataflow/batch/output/{job_name}/3_logsList'.format(gcs_bucket = args.gcs_bucket, job_name = job_name)) # Cloud-Debug [when using DataflowRunner]
     # logsList | 'dumpParseInitiatedList' >> beam.io.WriteToText('local_debug/{job_name}/3_logsList'.format(job_name = job_name)) # Local-Debug [when using DirectRunner]
 
     # Write to Pub/Sub
-    PDone = (parseList | 'dumpParseList' >> beam.io.WriteToText('gs://{bucket_name}/data_type=dataflow/batch/output/{job_name}/parselist'.format(bucket_name = args.gcs_bucket, job_name = job_name))
+    PDone = (parseList | 'dumpParseList' >> beam.io.WriteToText('gs://{gcs_bucket}/data_type=dataflow/batch/output/{job_name}/parselist'.format(gcs_bucket = args.gcs_bucket, job_name = job_name))
                        | 'writeToPubSub' >> beam.ParDo(WriteToPubSub(), job_name, args.topic, suffix))
 
-    # pubsubList | 'dumpPubSubList' >> beam.io.WriteToText('gs://{bucket_name}/data_type=dataflow/batch/output/{job_name}/4_pubsubList'.format(bucket_name = args.gcs_bucket, job_name = job_name)) # Cloud-Debug [when using DataflowRunner]
+    # pubsubList | 'dumpPubSubList' >> beam.io.WriteToText('gs://{gcs_bucket}/data_type=dataflow/batch/output/{job_name}/4_pubsubList'.format(gcs_bucket = args.gcs_bucket, job_name = job_name)) # Cloud-Debug [when using DataflowRunner]
     # pubsubList | 'dumpParseInitiatedList' >> beam.io.WriteToText('local_debug/{job_name}/4_pubsubList'.format(job_name = job_name)) # Local-Debug [when using DirectRunner]
 
     p1.run().wait_until_finish()

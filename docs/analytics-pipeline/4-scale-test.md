@@ -1,4 +1,11 @@
-### (4) - Scale Testing the Analytics Pipeline
+# Scale Testing the Analytics Pipeline
+
+In this section we will scale test our analytics pipeline.
+
+1. [Write Events](1---write-events)
+2. [Verify Events](2---verify-events)
+
+## (1) - Write Events
 
 First let's create a virtual Python environment & install dependencies.
 
@@ -13,28 +20,69 @@ source venv-scale-test/bin/activate
 pip install --upgrade pip
 
 # Install dependencies with pip
-pip install -r ../../services/python/analytics-pipeline/src/requirements/dataflow.txt
 pip install -r ../../services/python/analytics-pipeline/src/requirements/scale-test.txt
 
-# deactivate # exit virtual environment
+# Exit virtual environment:
+# deactivate
 ```
 
-Let's first write 1000 batch files to GSC:
+Second, we will write 10k batch files into GSC:
 
 ```bash
 python ../../services/python/analytics-pipeline/src/endpoint/scale-test.py \
-  --gcp-secret-path=/Users/loek/secrets/logical-flame-194710/analytics-gcs-writer.json \ # {LOCAL_SA_KEY_JSON}
-  --host=http://analytics.endpoints.logical-flame-194710.cloud.goog/ \ # {CLOUD_PROJECT_ID}
-  --api-key=AIzaSyCP3Feg6_dLZ7sze9gsjhXRg7XFfPxKrl4 \ # {API_KEY}
-  --bucket-name=logical-flame-194710-analytics \ # {CLOUD_PROJECT_ID}-analytics
+  --gcp-secret-path={LOCAL_SA_KEY_JSON} \
+  --host=http://analytics.endpoints.{GCLOUD_PROJECT_ID}.cloud.goog/ \
+  --api-key={GCP_API_KEY} \
+  --bucket-name={GCLOUD_PROJECT_ID}-analytics \
   --scale-test-name=scale-test \
   --event-category=function \
   --analytics-environment=testing \
   --pool-size=30 \
-  --n=1000
+  --n=10000
 ```
 
-Copy the scale test name & replace {SCALE_TEST_NAME} with it in the below query before submitting it in your terminal:
+After the script finishes, copy the {SCALE_TEST_NAME}, {EVENT_DS} & {EVENT_TIME} from the output.
+
+## (2) - Verify Events
+
+### (2.1) - In GCS
+
+Verify whether our events arrived successfully in GCS:
+
+```bash
+QUERY="
+SELECT
+  a.n,
+  COUNT(*) AS freq,
+  a.n * COUNT(*) AS total_no_events
+FROM
+    (
+    SELECT
+      batchId,
+      COUNT(*) AS n
+    FROM table_test
+    WHERE eventType = '{SCALE_TEST_NAME}'
+    GROUP BY 1
+    ) a
+GROUP BY 1
+;
+"
+bq \
+  --location=EU \
+  --use_legacy_sql=false \
+  --external_table_definition=table_test::batchId:STRING,eventType:STRING@NEWLINE_DELIMITED_JSON=gs://{CLOUD_PROJECT_ID}-analytics/data_type=json/analytics_environment=testing/event_category=function/event_ds={EVENT_DS}/event_time={EVENT_TIME}/{SCALE_TEST_NAME}/\* \
+  $QUERY
+
+# +---+-------+------------------+
+# | n | freq  | total_no_events  |
+# +---+-------+------------------+
+# | 4 | 10000 |            40000 |
+# +---+-------+------------------+
+```
+
+### (2.2) - In BigQuery
+
+Next we verify whether our analytics Cloud Function successfully forwarded these events into native BigQuery storage:
 
 ```bash
 QUERY="
@@ -54,10 +102,9 @@ GROUP BY 1
 "
 bq query --use_legacy_sql=false $QUERY
 
-# Waiting on bqjob_r74008c4853c5f13c_0000016b9436e003_1 ... (1s) Current status: DONE   
-# +---+------+-----------------+
-# | n | freq | total_no_events |
-# +---+------+-----------------+
-# | 4 | 1000 |            4000 |
-# +---+------+-----------------+
+# +---+-------+------------------+
+# | n | freq  | total_no_events  |
+# +---+-------+------------------+
+# | 4 | 10000 |            40000 |
+# +---+-------+------------------+
 ```
