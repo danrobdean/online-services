@@ -2,10 +2,10 @@
 
 In this section we will scale test our analytics pipeline.
 
-1. [Write Events](#1---write-events)
-2. [Verify Events](#2---verify-events)
+1. [Write Events to Endpoint](#1---write-events-to-endpoint)
+2. [Verify Events in GCS and BigQuery](#2---verify-events-in-gcs-and-bigquery)
 
-## (1) - Write Events
+## (1) - Write Events to Endpoint
 
 First let's create a virtual Python environment & install dependencies.
 
@@ -13,7 +13,7 @@ First let's create a virtual Python environment & install dependencies.
 # Step out of your current Python 3 virtual environment, if you are in one:
 deactivate
 
-# Create a Python 3 virtual environment
+# Create a new Python 3 virtual environment
 python3 -m venv venv-scale-test
 
 # Activate virtual environment
@@ -46,7 +46,9 @@ python ../../services/python/analytics-pipeline/src/endpoint/scale-test.py \
 
 After the script finishes, copy {**SCALE_TEST_NAME**, **EVENT_DS**, **EVENT_TIME**} from the terminal output.
 
-## (2) - Verify Events
+## (2) - Verify Events in GCS and BigQuery
+
+_Tip - You might need to still use a Python 2.7+ interpreter with the gcloud cli for the below commands to work!_
 
 ### (2.1) - In GCS
 
@@ -70,7 +72,7 @@ FROM
 GROUP BY 1
 ;
 "
-bq \
+bq query \
   --location=EU \
   --use_legacy_sql=false \
   --external_table_definition=table_test::batchId:STRING,eventType:STRING@NEWLINE_DELIMITED_JSON=gs://{GCLOUD_PROJECT_ID}-analytics/data_type=json/analytics_environment=testing/event_category=function/event_ds={EVENT_DS}/event_time={EVENT_TIME}/{SCALE_TEST_NAME}/\* \
