@@ -41,6 +41,7 @@ module "analytics" {
   gcloud_analytics_bucket_location = "EU"
   gcloud_region                    = "${var.gcloud_region}"
   gcloud_project                   = "${var.gcloud_project}"
+  k8s_cluster_name                 = "${var.k8s_cluster_name}"
 }
 
 output "analytics_host" {

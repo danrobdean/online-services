@@ -2,7 +2,7 @@
 
 # Create the address.
 resource "google_compute_address" "analytics_ip" {
-  name   = "analytics-address"
+  name   = "${var.k8s_cluster_name}-analytics-address"
   region = var.gcloud_region
 }
 
