@@ -9,7 +9,7 @@ In order to facilitate this, we provide two things:
 
 ## (1) - Utilizing the Cloud Function
 
-When deploying [the analytics Terraform module](https://github.com/improbable/online-services/tree/master/services/terraform), you automatically also deployed the analytics Cloud Function. Whenever events are sent to our endpoint where the URL parameter **event_category** was set to **function**, a notification is triggered that invokes our function to pick up this file & ingest it into native BigQuery storage. Only when a Cloud Function is invoked, do you accrue any costs.
+When deploying [the analytics Terraform module](https://github.com/improbable/online-services/tree/master/services/terraform), you automatically also deployed the [analytics Cloud Function](https://console.cloud.google.com/functions/list) (look for a function called **function-gcs-to-bq-..**). Whenever events are sent to our endpoint where the URL parameter **event_category** was set to **function**, a notification is triggered that invokes our function to pick up this file & ingest it into native BigQuery storage. Only when a Cloud Function is invoked, do you accrue any costs.
 
 The function:
 
@@ -29,8 +29,13 @@ curl --request POST \
   --header "content-type:application/json" \
   --data "{\"eventSource\":\"client\",\"eventClass\":\"test\",\"eventType\":\"cloud_function\",\"eventTimestamp\":1562599755,\"eventIndex\":6,\"sessionId\":\"f58179a375290599dde17f7c6d546d78\",\"buildVersion\":\"2.0.13\",\"eventEnvironment\":\"testing\",\"eventAttributes\":{\"playerId\": 12345678}}" \
   "http://analytics.endpoints.{GCLOUD_PROJECT_ID}.cloud.goog:80/v1/event?key={GCP_API_KEY}&analytics_environment=testing&event_category=function&session_id=f58179a375290599dde17f7c6d546d78"
-
 ```
+
+After submitting the event, verify in [the BigQuery UI](https://console.cloud.google.com/bigquery):
+
+- There is now a dataset called **events** with table called **events_function** which contains your event.
+- There is now a dataset called **logs** with a table called **events_logs_function** which contains a parse log of your event.
+- The **logs** dataset will also contain two more empty tables: **events_debug_batch** & **events_logs_function_backfill**.
 
 ## (2) - Executing Backfills
 
@@ -48,7 +53,10 @@ First, navigate to the [service account overview in the Cloud Console](https://c
 Second, let's create a virtual Python environment & install dependencies:
 
 ```bash
-# Create a Python 3 virtual environment:
+# Step out of your current Python 3 virtual environment, if you are in one:
+deactivate
+
+# Create a new Python 3 virtual environment:
 python3 -m venv venv-dataflow
 
 # Activate virtual environment:
@@ -67,25 +75,35 @@ pip install -r ../../services/python/analytics-pipeline/src/requirements/dataflo
 Now let's boot our backfill batch script:
 
 ```bash
+# Set environment variable for credentials
+export GOOGLE_APPLICATION_CREDENTIALS={LOCAL_SA_KEY_JSON_DATAFLOW}
+
 # Trigger script!
-python ../../services/python/analytics-pipeline/src/dataflow/gcs-to-bq-backfill.py  \
+python ../../services/python/analytics-pipeline/src/dataflow/p1-gcs-to-bq-backfill.py  \
+  --setup-file=../../services/python/analytics-pipeline/src/dataflow/setup.py \ # Required
   --execution-environment=DataflowRunner \ # Required
   --local-sa-key={LOCAL_SA_KEY_JSON_DATAFLOW} \ # Required
   --gcs-bucket={GCLOUD_PROJECT_ID}-analytics \ # Required
   --topic=cloud-function-gcs-to-bq-topic \ # Required
-  --gcp={GCLOUD_PROJECT_ID} # Required
+  --gcp={GCLOUD_PROJECT_ID} \ # Required
   --analytics-environment=testing \ # Optional, if omitted will pick up all environments: {testing, development, staging, development, production, live}
   --event-category=cold \ # Required
   --event-ds-start=2019-01-01 \ # Optional, if omitted will default to: 2019-01-01
-  --event-ds-stop=2019-01-31 \ # Optional, if omitted will default to: 2020-12-31
-  --event-time=0-8 # Optional, if omitted will pick up all times: {0-8, 8-16, 16-24}
+  --event-ds-stop=2020-12-31 \ # Optional, if omitted will default to: 2020-12-31
+  --event-time=8-16 # Optional, if omitted will pick up all times: {0-8, 8-16, 16-24}
 ```
 
-Note that we are simply following the GCS file tree:
+Note that we are simply following the GCS file tree with our inputs:
 
 > gs://{gcs-bucket}/data_type=json/analytics_environment={testing|development|staging|production|live}/event_category={!function}/event_ds={yyyy-mm-dd}/event_time={0-8|8-16|16-24}/*
 
 Check out the execution of your Dataflow Batch script in [the Dataflow Console](https://console.cloud.google.com/dataflow)!
+
+If you pointed the backfill script to files in GCS that were **not already ingested**, verify in [the BigQuery UI](https://console.cloud.google.com/bigquery):
+
+- There are now parse logs from your Dataflow job in `logs.events_logs_function_backfill`
+- There are now Parse logs from the analytics Cloud Function in `logs.events_logs_function`
+- The events have been ingested into `events.events_function`
 
 ---
 

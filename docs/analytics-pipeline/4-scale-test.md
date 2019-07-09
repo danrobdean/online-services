@@ -10,6 +10,9 @@ In this section we will scale test our analytics pipeline.
 First let's create a virtual Python environment & install dependencies.
 
 ```bash
+# Step out of your current Python 3 virtual environment, if you are in one:
+deactivate
+
 # Create a Python 3 virtual environment
 python3 -m venv venv-scale-test
 

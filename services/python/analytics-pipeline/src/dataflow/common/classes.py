@@ -4,10 +4,10 @@ import apache_beam as beam
 class getGcsFileList(beam.DoFn):
 
     def process(self, element):
-        from apache_beam.io.gcp.gcsio import GcsIO
+        from apache_beam.io.gcp import gcsio
 
         prefix = element
-        file_size_dict = GcsIO().list_prefix(prefix)
+        file_size_dict = gcsio.GcsIO().list_prefix(prefix)
         file_list = file_size_dict.keys()
 
         for i in file_list:
@@ -15,12 +15,12 @@ class getGcsFileList(beam.DoFn):
 
 class WriteToPubSub(beam.DoFn):
 
-    def process(self, element, job_name, topic, suffix):
+    def process(self, element, job_name, topic, suffix, gcp, gcs_bucket):
         from apache_beam.io.gcp import gcsio
         from google.cloud import pubsub_v1
 
         gcs = gcsio.GcsIO()
-        prefix = 'gs://{gcs_bucket}/data_type=dataflow/batch/output/{job_name}/parselist'.format(gcs_bucket = args.gcs_bucket, job_name = job_name)
+        prefix = 'gs://{gcs_bucket}/data_type=dataflow/batch/output/{job_name}/parselist'.format(gcs_bucket = gcs_bucket, job_name = job_name)
         file_size_dict = gcs.list_prefix(prefix)
         file_list = file_size_dict.keys()
 
@@ -28,7 +28,7 @@ class WriteToPubSub(beam.DoFn):
         client_ps = pubsub_v1.PublisherClient(
           batch_settings = pubsub_v1.types.BatchSettings(max_messages = 1000, max_bytes = 5120)
           )
-        topic = client_ps.topic_path(args.gcp, topic + suffix)
+        topic = client_ps.topic_path(gcp, topic + suffix)
 
         for i in file_list:
             gcs_uri_list_read = gcs.open(filename = i, mode = 'r').read().decode('utf-8').split('\n')

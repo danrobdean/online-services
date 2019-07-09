@@ -41,6 +41,12 @@ resource "google_project_iam_member" "sa_user_role_batch" {
   member = "serviceAccount:${google_service_account.dataflow_batch.email}"
 }
 
+# Add the roles/pubsub.admin role.
+resource "google_project_iam_member" "pubsub_admin_role_batch" {
+  role   = "roles/pubsub.admin"
+  member = "serviceAccount:${google_service_account.dataflow_batch.email}"
+}
+
 # Create a key file for the Service Account.
 resource "google_service_account_key" "dataflow_batch" {
   service_account_id = "${google_service_account.dataflow_batch.name}"

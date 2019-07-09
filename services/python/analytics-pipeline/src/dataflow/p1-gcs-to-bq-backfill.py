@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Python 3.6.5
 
-# python src/gcs-to-bq-backfill.py \
+# python src/p1-gcs-to-bq-backfill.py \
 #  --execution-environment=DataflowRunner \
 #  --local-sa-key={LOCAL_SA_KEY_JSON_DATAFLOW} \
 #  --gcs-bucket={GCLOUD_PROJECT_ID}-analytics \
@@ -25,7 +25,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--execution-environment', dest = 'execution_environment', default = 'DataflowRunner')
 parser.add_argument('--setup-file', dest = 'setup_file', default = 'src/setup.py')
 parser.add_argument('--local-sa-key', dest = 'local_sa_key', required = True)
-parser.add_argument('--topic', default = 'analytics-gcs-topic-cloud-function')
+parser.add_argument('--topic', default = 'cloud-function-gcs-to-bq-topic')
 parser.add_argument('--gcp', required = True)
 parser.add_argument('--type', default = '')
 
@@ -62,7 +62,7 @@ def run():
     suffix, suffix_bq, list_env, name_env = typeParser(args.type, args.analytics_environment)
     list_time_part, name_time = timeParser(args.event_time)
 
-    bq_success = provisionBigQuery(bigquery.Client.from_service_account_json(args.local_sa_key), 'stream', suffix_bq)
+    bq_success = provisionBigQuery(bigquery.Client.from_service_account_json(args.local_sa_key), method, suffix_bq, True)
     if not bq_success:
         print('Failed to provision required BigQuery resources!')
         sys.exit()
@@ -77,7 +77,7 @@ def run():
       'temp_location': 'gs://{gcs_bucket}/data_type=dataflow/batch/temp/{job_name}/'.format(gcs_bucket = args.gcs_bucket, job_name = job_name),
       'runner': args.execution_environment, # {DirectRunner, DataflowRunner}
       'setup_file': args.setup_file,
-      'service_account_email': 'dataflow-gcs-to-bq-stream@{gcp_project_id}.iam.gserviceaccount.com'.format(gcp_project_id = args.gcp),
+      'service_account_email': 'dataflow-batch@{gcp_project_id}.iam.gserviceaccount.com'.format(gcp_project_id = args.gcp),
       'job_name': job_name
       })
     pipeline_options.view_as(SetupOptions).save_main_session = True
@@ -92,7 +92,7 @@ def run():
 
     fileListBq = (p1 | 'parseBqFileList' >> beam.io.Read(beam.io.BigQuerySource(
                         # "What is already in BQ?"
-                        query = queryGenerator(args.gcp, suffix_bq, '', args.event_ds_start, args.event_ds_stop, list_time_part, list_env, args.event_category, args.scale_test_name),
+                        query = queryGenerator(args.gcp, suffix_bq, method, args.event_ds_start, args.event_ds_stop, list_time_part, list_env, args.event_category, args.scale_test_name),
                         use_standard_sql = True))
                      | 'bqListPairWithOne' >> beam.Map(lambda x: (x['file_path'], 1)))
 
@@ -108,23 +108,20 @@ def run():
     # parseList | 'dumpParseList' >> beam.io.WriteToText('local_debug/{job_name}/2_parseList'.format(job_name = job_name)) # Local-Debug [when using DirectRunner]
 
     # Write to BigQuery
-    logsList = (parseList  | 'addParseInitiatedInfo' >> beam.Map(lambda x: {'job_name': job_name, 'processed_timestamp': time.time(), 'batch_id': hashlib.md5('/'.join(x.split('/')[-2:]).encode('utf-8')).hexdigest(), 'analytics_environment': pathParser(x, 'analytics_environment='),
-                                                                            'event_category': pathParser(x, 'event_category='), 'event_ds': pathParser(x, 'event_ds='), 'event_time': pathParser(x, 'event_time='), 'event': 'parse_initiated', 'file_path': x})
-                           | 'writeParseInitiated' >> beam.io.WriteToBigQuery(table = 'events_logs_' + method + '_backfill' + suffix_bq, dataset = 'logs' + suffix_bq, project = args.gcp, method = 'FILE_LOADS',
-                                                                              create_disposition = beam.io.gcp.bigquery.BigQueryDisposition.CREATE_IF_NEEDED,
-                                                                              write_disposition = beam.io.gcp.bigquery.BigQueryDisposition.WRITE_APPEND,
-                                                                              insert_retry_strategy = beam.io.gcp.bigquery_tools.RetryStrategy.RETRY_ON_TRANSIENT_ERROR,
-                                                                              schema = 'job_name:STRING,processed_timestamp:TIMESTAMP,batch_id:STRING,analytics_environment:STRING,event_category:STRING,event_ds:DATE,event_time:STRING,event:STRING,file_path:STRING'))
-
-    # logsList | 'dumpParseInitiatedList' >> beam.io.WriteToText('gs://{gcs_bucket}/data_type=dataflow/batch/output/{job_name}/3_logsList'.format(gcs_bucket = args.gcs_bucket, job_name = job_name)) # Cloud-Debug [when using DataflowRunner]
-    # logsList | 'dumpParseInitiatedList' >> beam.io.WriteToText('local_debug/{job_name}/3_logsList'.format(job_name = job_name)) # Local-Debug [when using DirectRunner]
+    logsList = (parseList | 'addParseInitiatedInfo' >> beam.Map(lambda x: {'job_name': job_name, 'processed_timestamp': time.time(), 'batch_id': hashlib.md5('/'.join(x.split('/')[-2:]).encode('utf-8')).hexdigest(), 'analytics_environment': pathParser(x, 'analytics_environment='),
+                                                                           'event_category': pathParser(x, 'event_category='), 'event_ds': pathParser(x, 'event_ds='), 'event_time': pathParser(x, 'event_time='), 'event': 'parse_initiated', 'file_path': x})
+                          | 'writeParseInitiated' >> beam.io.WriteToBigQuery(table = 'events_logs_' + method + '_backfill' + suffix_bq, dataset = 'logs' + suffix_bq, project = args.gcp, method = 'FILE_LOADS',
+                                                                             create_disposition = beam.io.gcp.bigquery.BigQueryDisposition.CREATE_IF_NEEDED,
+                                                                             write_disposition = beam.io.gcp.bigquery.BigQueryDisposition.WRITE_APPEND,
+                                                                             insert_retry_strategy = beam.io.gcp.bigquery_tools.RetryStrategy.RETRY_ON_TRANSIENT_ERROR,
+                                                                             schema = 'job_name:STRING,processed_timestamp:TIMESTAMP,batch_id:STRING,analytics_environment:STRING,event_category:STRING,event_ds:DATE,event_time:STRING,event:STRING,file_path:STRING'))
 
     # Write to Pub/Sub
-    PDone = (parseList | 'dumpParseList' >> beam.io.WriteToText('gs://{gcs_bucket}/data_type=dataflow/batch/output/{job_name}/parselist'.format(gcs_bucket = args.gcs_bucket, job_name = job_name))
-                       | 'writeToPubSub' >> beam.ParDo(WriteToPubSub(), job_name, args.topic, suffix))
+    PDone = (parseList | 'dumpParseListPubSub' >> beam.io.WriteToText('gs://{gcs_bucket}/data_type=dataflow/batch/output/{job_name}/parselist'.format(gcs_bucket = args.gcs_bucket, job_name = job_name))
+                       | 'writeToPubSub' >> beam.ParDo(WriteToPubSub(), job_name, args.topic, suffix, args.gcp, args.gcs_bucket))
 
-    # pubsubList | 'dumpPubSubList' >> beam.io.WriteToText('gs://{gcs_bucket}/data_type=dataflow/batch/output/{job_name}/4_pubsubList'.format(gcs_bucket = args.gcs_bucket, job_name = job_name)) # Cloud-Debug [when using DataflowRunner]
-    # pubsubList | 'dumpParseInitiatedList' >> beam.io.WriteToText('local_debug/{job_name}/4_pubsubList'.format(job_name = job_name)) # Local-Debug [when using DirectRunner]
+    # PDone | 'dumpPubSubList' >> beam.io.WriteToText('gs://{gcs_bucket}/data_type=dataflow/batch/output/{job_name}/4_pubsubList_{int}'.format(gcs_bucket = args.gcs_bucket, job_name = job_name)) # Cloud-Debug [when using DataflowRunner]
+    # PDone | 'dumpParseInitiatedList' >> beam.io.WriteToText('local_debug/{job_name}/4_pubsubList_{int}'.format(job_name = job_name)) # Local-Debug [when using DirectRunner]
 
     p1.run().wait_until_finish()
     return job_name
