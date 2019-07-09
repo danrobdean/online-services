@@ -9,7 +9,7 @@ Before you begin..
 
 There are currently 4 parts to the analytics pipeline documentation:
 
-1. Creating an endpoint to POST your JSON data to, which sanitizes, augments & finally stores the events in a Google Cloud Storage (GCS) bucket [**required**].
-2. Using GCS as an external data source through BigQuery [**required**].
-3. Deploying a Cloud Function that forwards events from GCS into native BigQuery storage (as opposed to using GCS as an external data source) [**optional**].
-4. Scale testing your analytics pipeline [**optional**].
+1. [Creating an endpoint to POST your JSON data to, which sanitizes, augments & finally stores the events in a Google Cloud Storage (GCS) bucket](https://github.com/improbable/online-services/blob/master/docs/analytics-pipeline/1-cloud-endpoint.md) [**required**].
+2. [Using GCS as an external data source through BigQuery](https://github.com/improbable/online-services/blob/master/docs/analytics-pipeline/2-bigquery-gcs-external.md) [**required**].
+3. [Deploying a Cloud Function that forwards events from GCS into native BigQuery storage (as opposed to using GCS as an external data source)](https://github.com/improbable/online-services/blob/analytics/docs/analytics-pipeline/3-bigquery-cloud-function.md) [**optional**].
+4. [Scale testing your analytics pipeline](https://github.com/improbable/online-services/blob/master/docs/analytics-pipeline/4-scale-test.md) [**optional**].

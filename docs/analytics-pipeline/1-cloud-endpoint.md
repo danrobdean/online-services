@@ -230,7 +230,7 @@ Each analytics event, which is a JSON dictionary, should adhere to the following
 
 **Keys should always be camelCase**, whereas values snake_case whenever appropriate. The idea is that all **root keys of the dictionary** are **always present for any event**. Anything custom to a particular event should be nested within eventAttributes. If there is nothing to nest it should be an empty dict (but still present).
 
-In case a server-side event is triggered around a player (vs. AI), always make sure the player_id (or character_id) is captured within eventAttributes. Else you will have no way of knowing which player the event belonged to. For client-side events, as long as we have at least one login event which pairs up the player_id with the client's sessionId, we can always backtrack which other client-side events belonged to a player.
+In case a server-side event is triggered around a player (vs. AI), always make sure the player_id (or character_id) is captured within eventAttributes. Else you will have no way of knowing which player the event belonged to. For client-side events, as long as we have at least one login event which pairs up the player_id with the client's sessionId, we can always backtrack which other client-side events belonged to a specific player.
 
 Finally, note that player_id is not a root field of our events, because it will not always be present for any event (e.g. AI induced events, client-side events pre-login, etc.).
 
@@ -297,3 +297,7 @@ kubectl get services
 # Delete your service:
 kubectl delete service {K8S_SERVICE_NAME}
 ```
+
+---
+
+Next up: [(2) - Using GCS as an external data source through BigQuery](https://github.com/improbable/online-services/blob/master/docs/analytics-pipeline/2-bigquery-gcs-external.md)

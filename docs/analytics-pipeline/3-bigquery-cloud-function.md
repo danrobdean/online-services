@@ -86,3 +86,7 @@ Note that we are simply following the GCS file tree:
 > gs://{gcs-bucket}/data_type=json/analytics_environment={testing|development|staging|production|live}/event_category={!function}/event_ds={yyyy-mm-dd}/event_time={0-8|8-16|16-24}/*
 
 Check out the execution of your Dataflow Batch script in [the Dataflow Console](https://console.cloud.google.com/dataflow)!
+
+---
+
+Next up: [(4) - Scale testing your analytics pipeline](https://github.com/improbable/online-services/blob/master/docs/analytics-pipeline/4-scale-test.md)

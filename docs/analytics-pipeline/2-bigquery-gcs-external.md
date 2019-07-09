@@ -54,3 +54,7 @@ bq --location=EU query \
 ```
 
 [More information..](https://cloud.google.com/bigquery/external-data-cloud-storage#temporary-tables)
+
+---
+
+Next up: [(3) - Deploying a Cloud Function that forwards events from GCS into native BigQuery storage (as opposed to using GCS as an external data source)](https://github.com/improbable/online-services/blob/analytics/docs/analytics-pipeline/3-bigquery-cloud-function.md)
