@@ -13,6 +13,13 @@ Either choose a **Native BigQuery Table** (static import of GCS data):
 
 - Table type: **Native** - which imports the data "as of now" into a static table in native BigQuery storage.
 - Table name: **events\_gcs\_native\_static**
+- Partition and cluster settings:
+    + Partitioning: **By field: eventTimestamp**
+    + Clustering order: **eventClass,eventType** (optional)
+- Write preference, choose one of:
+    + Write if empty
+    + Append to table
+    + Overwrite table
 
 Or an **External BigQuery Table** (live link with GCS data):
 
