@@ -4,7 +4,7 @@ This part covers the creation of an endpoint to forward analytics data to, which
 
 1. [Initiating, Verifying & Deploying the Analytics Endpoint](#1---initiating-verifying--deploying-the-analytics-endpoint)
 2. [How to Use the Endpoint](#2---how-to-use-the-endpoint)
-3. [GKE Cleanup & Debug](#3---gke-cleanup--debug)
+3. [GKE Cleanup & Debug](#3---gke-debug--cleanup)
 
 ## (1) - Initiating, Verifying & Deploying the Analytics Endpoint
 
@@ -58,7 +58,7 @@ curl --request POST \
   "http://0.0.0.0:8080/v1/file?key=local_so_does_not_matter&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"  
 ```
 
-If both requests returned proper JSON, without any error messages, the endpoint is working as anticipated! :tada:
+If both requests returned proper JSON, without any error messages, the endpoint is working as expected! :tada:
 
 ### (1.2) - Containerizing the Analytics Endpoint
 
@@ -126,7 +126,7 @@ In case the requests were successful, we can now push the container to GCR:
 gcloud config set project {GCLOUD_PROJECT_ID}
 
 # Upload container to Google Container Registry (GCR)
-docker push gcr.io/{GCLOUD_PROJECT_ID}/os-analytics-endpoint:latest
+docker push gcr.io/{GCLOUD_PROJECT_ID}/analytics-endpoint:latest
 
 # Verify your image is uploaded
 gcloud container images list
@@ -134,7 +134,7 @@ gcloud container images list
 
 ### (1.3) - Deploying Analytics Endpoint Container onto GKE with Cloud Endpoints
 
-At this point we have a working container hosted in GCR, which GKE can pull containers from. We will now deploy our analytics endpoint on top of GKE. You can check out what your {**K8s_CLUSTER_NAME**, **K8s_CLUSTER_LCOATION**} are [in the Cloud Console](https://console.cloud.google.com/kubernetes/list).
+At this point we have a working container hosted in GCR, which GKE can pull containers from. We will now deploy our analytics endpoint on top of GKE. You can check out what your {**K8S_CLUSTER_NAME**, **K8S_CLUSTER_LOCATION**} are [in the Cloud Console](https://console.cloud.google.com/kubernetes/list).
 
 ```bash
 # Make sure you have the credentials to talk to the right cluster:
@@ -183,7 +183,7 @@ This method enables you to store analytics events in your GCS analytics bucket. 
 - Accepts JSON dicts (one for each event), either standalone or batched up in lists (recommended).
 - Augments JSON events with **batchId**, **eventId**, **receivedTimestamp** & **analyticsEnvironment**.
 - Writes received JSON data as newline delimited JSON event files in GCS, which facilitates easy ingestion into BigQuery.
-- The event’s location in GCS is co-determined through endpoint URL parameters. These in turn determine whether the events are ingested into native BigQuery storage (vs. GCS as external storage) by default.
+- Determines the files' location in GCS through endpoint URL parameters. These in turn determine whether the events are ingested into native BigQuery storage (vs. GCS as external storage) by default.
 - Also accepts non-JSON data.
 
 #### (2.1.1) - URL Parameters
@@ -203,12 +203,14 @@ These `<parameters>` (except for **key**) influence where the data ends up in th
 
 > gs://gcp-analytics-pipeline-events/data\_type={data\_type}/analytics\_environment={analytics\_environment}/event\_category={event\_category}/event\_ds={event\_ds}/event\_time={event\_time}/{session\_id}/{ts\_fmt}\-{int}'
 
-Note that data_type is determined automatically and can either be **json** (when valid JSON is POST'ed) or **unknown** (otherwise). The fields **ts_fmt** & **int** are automatically set by the endpoint as well.
+Note that **data_type** is determined automatically and can either be **json** (when valid JSON is POST'ed) or **unknown** (otherwise). The fields **ts_fmt** & **int** are automatically set by the endpoint as well.
 
 Note that the **event_category** parameter is particularly **important**:
 
 - When set to **function** all data contained in the POST request will be **ingested into native BigQuery storage** using the Cloud Function we created when we deployed [the analytics module with Terraform]((https://github.com/improbable/online-services/tree/master/services/terraform)).
 - When set to **anything else** all data contained in the POST request will **arrive in GCS**, but will **not by default be ingested into native BigQuery storage**. This data can however still be accessed by BigQuery by using GCS as an external data source.
+
+Note that **function** is a completely arbitrary string, but we have established [GCS notifications to trigger Pub/Sub notifications to our analytics Pub/Sub Topic](https://github.com/improbable/online-services/tree/master/services/terraform/module-analytics/pubsub.tf) whenever files are created on this particular GCS prefix. In this case these notifications invoke our analytics Cloud Function which ingests them into native BigQuery storage. Over-time we can imagine developers extending this setup in new ways: perhaps anything written into **crashdump** (either via **v1/event** or **v1/file**) will trigger a different Cloud Function which can parse a crashdump and write relevant information into BigQuery, or **fps** will be used for high volume frames-per-second events that are subsequently aggregated with a Dataflow (Stream / Batch) script _before_ being written into BigQuery.
 
 #### (2.1.2) - The JSON Event Schema
 
@@ -226,7 +228,11 @@ Each analytics event, which is a JSON dictionary, should adhere to the following
 | eventTimestamp   | float   | The timestamp of the event, in unix time. |
 | eventAttributes  | dict    | Anything else relating to this particular event will be captured in this attribute as a nested JSON dictionary. |
 
-The idea is that all **root keys of the dictionary** are **always present for any event**. Anything custom to a particular event should be nested within eventAttributes. If there is nothing to nest it should be an empty dict (but still present). In case a server-side event is triggered around a player, ensure the player_id in captured in eventAttributes. For client-side events, as long as we have a log-in event which pairs up the player_id with the client's sessionId, we can always backtrack which other client-side events belonged to a player. Note that player_id is not a root field of our events, because it will not always be present for any event (e.g. AI induced events, client-side events pre-login, etc.).
+**Keys should always be camelCase**, whereas values snake_case whenever appropriate. The idea is that all **root keys of the dictionary** are **always present for any event**. Anything custom to a particular event should be nested within eventAttributes. If there is nothing to nest it should be an empty dict (but still present).
+
+In case a server-side event is triggered around a player (vs. AI), always make sure the player_id (or character_id) is captured within eventAttributes. Else you will have no way of knowing which player the event belonged to. For client-side events, as long as we have at least one login event which pairs up the player_id with the client's sessionId, we can always backtrack which other client-side events belonged to a player.
+
+Finally, note that player_id is not a root field of our events, because it will not always be present for any event (e.g. AI induced events, client-side events pre-login, etc.).
 
 ### (2.2) - `/v1/file`
 
@@ -253,23 +259,7 @@ curl \
   --data-binary '@worker-crashdump-test.gz'
 ```
 
-## (3) - GKE Cleanup & Debug
-
-In case you want remove your workloads from GKE, you can run the following commands:
-
-```bash
-# Obtain list of all your deployments:
-kubectl get deployments
-
-# Delete your deployment:
-kubectl delete deployment {K8S_DEPLOYMENT_NAME}
-
-# Obtain list of all your services:
-kubectl get services
-
-# Delete your service:
-kubectl delete service {K8S_SERVICE_NAME}
-```
+## (3) - GKE Debug & Cleanup
 
 The following commands can help you check what is happening with your pods in GKE & potentially debug any issues. Note a pod is generally a group of containers running together. In our case, each pod contains two containers: one running our custom server code & one public Google container that runs everything related to Cloud Endpoints. We are running 3 replicas of our pod together in a single deployment. This means we have 2 x 3 = 6 containers running in our deployment.
 
@@ -290,4 +280,20 @@ kubectl logs {POD_ID} {CONTAINER_NAME}
 kubectl exec {POD_ID} -c {CONTAINER_NAME} -it bash
 
 # Where {CONTAINER_NAME} = analytics-deployment-server or analytics-deployment-endpoint
+```
+
+In case you want remove your workloads (service & deployment) from GKE, you can run the following commands:
+
+```bash
+# Obtain list of all your deployments:
+kubectl get deployments
+
+# Delete your deployment:
+kubectl delete deployment {K8S_DEPLOYMENT_NAME}
+
+# Obtain list of all your services:
+kubectl get services
+
+# Delete your service:
+kubectl delete service {K8S_SERVICE_NAME}
 ```
