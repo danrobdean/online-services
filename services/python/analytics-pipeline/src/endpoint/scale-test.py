@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# Python 3.7
+# Python 3.6.5
 
 # python src/scale-test-local.py \
 #   --gcp-secret-path={LOCAL_SA_KEY_JSON} \

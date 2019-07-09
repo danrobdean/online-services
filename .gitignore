@@ -7,3 +7,4 @@
 **/*.DotSettings.user
 *.DS_Store
 **/venv*/
+**/.python-version

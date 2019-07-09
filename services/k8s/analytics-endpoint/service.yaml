@@ -11,4 +11,4 @@ spec:
   selector:
     app: analytics-service
   type: LoadBalancer
-  loadBalancerIP: 34.77.117.11 # "[your Analytics IP address]"
+  loadBalancerIP: {ANALYTICS_HOST_IP} # Update

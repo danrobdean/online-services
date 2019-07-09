@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Python 3.7
+# Python 3.6.5
 
 from google.cloud import bigquery, storage
 import hashlib

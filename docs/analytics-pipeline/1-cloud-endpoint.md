@@ -12,7 +12,7 @@ This part covers the creation of an endpoint to forward analytics data to, which
 
 We will start by calling the script directly via the command line, which will start a local running execution of our endpoint.
 
-_Note: The below are UNIX based commands, if you run Windows best skip this step & go straight to (1)._
+_Note: The below are UNIX based commands, if you run Windows best skip this step & go straight to [(1.2)](#12---containerizing-the-analytics-endpoint)._
 
 ```bash
 # Create a Python 3 virtual environment:
@@ -28,11 +28,11 @@ pip install --upgrade pip
 pip install -r ../../services/python/analytics-pipeline/src/requirements/endpoint.txt
 
 # Set required environment variables
-export GCP="{GCLOUD_PROJECT_ID}"
-export BUCKET_NAME="{GCLOUD_PROJECT_ID}-analytics"
-export SECRET_JSON="{LOCAL_SA_KEY_JSON}"
-export SECRET_P12="{LOCAL_SA_KEY_P12}"
-export EMAIL="analytics-gcs-writer@{GCLOUD_PROJECT_ID}.iam.gserviceaccount.com"
+export GCP={GCLOUD_PROJECT_ID}
+export BUCKET_NAME={GCLOUD_PROJECT_ID}-analytics
+export SECRET_JSON={LOCAL_SA_KEY_JSON}
+export SECRET_P12={LOCAL_SA_KEY_P12}
+export EMAIL=analytics-gcs-writer@{GCLOUD_PROJECT_ID}.iam.gserviceaccount.com
 
 # Trigger script!
 python ../../services/python/analytics-pipeline/src/endpoint/main.py
@@ -55,7 +55,7 @@ curl --request POST \
 curl --request POST \
   --header 'content-type:application/json' \
   --data "{\"content_type\":\"text/plain\", \"md5_digest\": \"XKvMhvwrORVuxdX54FQEdg==\"}" \
-  "http://0.0.0.0:8080/v1/file?key=local_so_does_not_matter&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"
+  "http://0.0.0.0:8080/v1/file?key=local_so_does_not_matter&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"  
 ```
 
 If both requests returned proper JSON, without any error messages, the endpoint is working as anticipated! :tada:
@@ -114,7 +114,7 @@ curl --request POST \
   --data "{\"content_type\":\"text/plain\", \"md5_digest\": \"XKvMhvwrORVuxdX54FQEdg==\"}" \
   "http://0.0.0.0:8080/v1/file?key=local_so_does_not_matter&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"
 
-# To stop the container, in a different terminal window run:
+# To stop the running container:
 docker ps # Copy {CONTAINER_ID}
 docker kill {CONTAINER_ID}
 ```
@@ -134,23 +134,29 @@ gcloud container images list
 
 ### (1.3) - Deploying Analytics Endpoint Container onto GKE with Cloud Endpoints
 
-At this point we have a working container hosted in GCR, which GKE can pull containers from. We will now deploy our analytics endpoint on top of GKE.
+At this point we have a working container hosted in GCR, which GKE can pull containers from. We will now deploy our analytics endpoint on top of GKE. You can check out what your {**K8s_CLUSTER_NAME**, **K8s_CLUSTER_LCOATION**} are [in the Cloud Console](https://console.cloud.google.com/kubernetes/list).
 
 ```bash
 # Make sure you have the credentials to talk to the right cluster:
-gcloud container clusters get-credentials {K8S_CLUSTER_NAME} --zone {GCLOUD_ZONE}
+gcloud container clusters get-credentials {K8S_CLUSTER_NAME} --zone {K8S_CLUSTER_LOCATION}
 
 # Or if you already do - that you're configured to talk to the right cluster:
+kubectl config get-contexts # Copy the correct {K8S_CONTEXT_NAME}
 kubectl config use-context {K8S_CONTEXT_NAME}
 ```
 
-Now **make all appropriate edits to the files in [../../services/k8s/analytics-endpoint/](https://github.com/improbable/online-services/tree/analytics/services/k8s/analytics-endpoint)** & **afterwards** deploy them to Kubernetes:
+We now first need to make a few edits to our Kubernetes YAML files:
+
+- Update the [deployment.yaml](../../services/k8s/analytics-endpoint/deployment.yaml) file with your {**GCLOUD_PROJECT_ID**}.
+- Update the [service.yaml](../../services/k8s/analytics-endpoint/service.yaml) file with your {**ANALYTICS_HOST_IP**}. You can check out what this value is by navigating into [terraform/](https://github.com/improbable/online-services/tree/master/services/terraform) & running `terraform output` (look for **analytics_host**).
+
+**Afterwards** deploy the deployment & service to GKE:
 
 ```bash
 kubectl apply -f ../../services/k8s/analytics-endpoint
 ```
 
-Next, [get an API key for your GCP](https://cloud.google.com/endpoints/docs/openapi/get-started-kubernetes#create_an_api_key_and_set_an_environment_variable), which you need to pass via the **key** parameter in the url of your POST request: {GCP_API_KEY}. Note that is is currently [not possible to provision this one programmatically](https://issuetracker.google.com/issues/76227920). Also note that **it takes some time before API keys become fully functional, to be safe wait at least 10 minutes** before attempting the below POST requests.
+Next, [get an API key for your GCP](https://console.cloud.google.com/apis/credentials), which you need to pass via the **key** parameter in the url of your POST request: {GCP_API_KEY}. Note that is is currently [not possible to provision this one programmatically](https://issuetracker.google.com/issues/76227920). Also note that **it takes some time before API keys become fully functional, to be safe wait at least 10 minutes** before attempting the below POST requests.
 
 ```bash
 # Verify v1/event method is working:

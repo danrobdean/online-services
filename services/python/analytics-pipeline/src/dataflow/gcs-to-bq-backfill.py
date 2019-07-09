@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Python 3.7.1
+# Python 3.6.5
 
 # python src/gcs-to-bq-backfill.py \
 #  --execution-environment=DataflowRunner \

@@ -15,7 +15,7 @@ ENV PATH $PATH:/usr/local/gcloud/google-cloud-sdk/bin
 # Install kubectl
 RUN gcloud components install kubectl
 
-ADD python /app/python
+ADD python/analytics-pipeline/src /app/python/analytics-pipeline/src
 WORKDIR /app
 
 RUN pip install --upgrade pip

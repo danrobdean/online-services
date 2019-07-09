@@ -2,8 +2,10 @@
 
 Before you begin..
 
-- Make sure you have applied the [analytics Terraform module](https://github.com/improbable/online-services/tree/master/services/terraform), to ensure all required resources for this section have been provisioned.
+- Make sure you have applied the [analytics Terraform module](https://github.com/improbable/online-services/tree/master/services/terraform/module-analytics), to ensure all required resources for this section have been provisioned.
+    + To do so, navigate into [the Terraform folder](https://github.com/improbable/online-services/tree/master/services/terraform), ensure that the analytics section within [modules.tf](https://github.com/improbable/online-services/tree/master/services/terraform/modules.tf) is not commented out & run `terraform init` followed by `terraform apply`.
 - Afterwards, navigate to the [service account overview in the Cloud Console](https://console.cloud.google.com/iam-admin/serviceaccounts) and store both a JSON & P12 key from the service account named **Analytics GCS Writer** locally on your machine + write down the file paths: {**LOCAL_SA_KEY_JSON**, **LOCAL_SA_KEY_P12**}.
+- The `gcloud` cli usually ships with a Python 2 interpreter, whereas we will use Python 3. Run `gcloud topic startup` for [more information](https://cloud.google.com/sdk/install) on how to point `gcloud` to a Python 3.4+ interpreter. Otherwise you could use something like [pyenv](https://github.com/pyenv/pyenv) to toggle between Python versions.
 
 There are currently 4 parts to the analytics pipeline documentation:
 
