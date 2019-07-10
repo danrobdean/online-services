@@ -297,13 +297,13 @@ In case you want remove your workloads (service & deployment) from GKE, you can 
 
 ```bash
 # Obtain list of all your deployments:
-kubectl get deployments
+kubectl get deployments # Copy the {K8S_DEPLOYMENT_NAME}
 
 # Delete your deployment:
 kubectl delete deployment {K8S_DEPLOYMENT_NAME}
 
 # Obtain list of all your services:
-kubectl get services
+kubectl get services # Copy the {K8S_SERVICE_NAME}
 
 # Delete your service:
 kubectl delete service {K8S_SERVICE_NAME}
