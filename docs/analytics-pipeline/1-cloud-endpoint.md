@@ -207,10 +207,10 @@ Note that {**data_type**} is determined automatically and can either be **json**
 
 Note that the **event_category** parameter is particularly **important**:
 
-- When set to **function** all data contained in the POST request will be **ingested into native BigQuery storage** using [the analytics Cloud Function](https://console.cloud.google.com/functions/list) (`function-gcs-to-bq-.*`) we created when we deployed [the analytics module with Terraform]((https://github.com/improbable/online-services/tree/master/services/terraform)).
+- When set to **function** all data contained in the POST request will be **ingested into native BigQuery storage** using [the analytics Cloud Function (`function-gcs-to-bq-.*`)](https://console.cloud.google.com/functions/list) we created when we deployed [the analytics module with Terraform]((https://github.com/improbable/online-services/tree/master/services/terraform)).
 - When set to **anything else** all data contained in the POST request will **arrive in GCS**, but will **not by default be ingested into native BigQuery storage**. This data can however still be accessed by BigQuery by using GCS as an external data source.
 
-Note that **function** is a completely arbitrary string, but we have established [GCS notifications to trigger Pub/Sub notifications to our analytics Pub/Sub Topic](https://github.com/improbable/online-services/tree/master/services/terraform/module-analytics/pubsub.tf) whenever files are created on this particular GCS prefix. In this case these notifications invoke our analytics Cloud Function which ingests these files into native BigQuery storage. Over-time we can imagine developers extending this setup in new ways: perhaps crashdumps are written into **crashdump** (either via **v1/event** or **v1/file**) which will trigger a different Cloud Function with the appropriate logic to parse it and write relevant information into BigQuery, or **fps** will be used for high volume frames-per-second events that are subsequently aggregated with a Dataflow (Stream / Batch) script _before_ being written into BigQuery.
+Note that **function** is a completely arbitrary string, but we have established [GCS notifications to trigger Pub/Sub notifications to the Pub/Sub Topic that feeds our analytics Cloud Function](https://github.com/improbable/online-services/tree/master/services/terraform/module-analytics/pubsub.tf) whenever files are created on this particular GCS prefix. In this case these notifications invoke our analytics Cloud Function which ingests these files into native BigQuery storage. Over-time we can imagine developers extending this setup in new ways: perhaps crashdumps are written into **crashdump** (either via **v1/event** or **v1/file**) which will trigger a different Cloud Function with the appropriate logic to parse it and write relevant information into BigQuery, or **fps** will be used for high volume frames-per-second events that are subsequently aggregated with a Dataflow (Stream / Batch) script _before_ being written into BigQuery.
 
 #### (2.1.2) - The JSON Event Schema
 
@@ -220,19 +220,30 @@ Each analytics event, which is a JSON dictionary, should adhere to the following
 |------------------|---------|-------------|
 | eventEnvironment | string  | One of  {**testing**, **development**, **staging**, **production**, **live**}. |
 | eventIndex       | integer | Increments with one with each event per sessionId, allows us to spot missing data. |
-| eventSource      | string  | Source of the event, ~ worker type (e.g. client, server, ...). |
+| eventSource      | string  | Source of the event, ~ worker type (e.g. client/server). |
 | eventClass       | string  | A higher order mnemonic classification of events (e.g. session). |
 | eventType        | string  | A mnemonic event identifier (e.g. session_start). |
-| sessionId        | string  | The session_id, which is unique per client/server session. |
+| sessionId        | string  | The session_id, which is unique per worker (e.g. client/server) session. |
 | buildVersion     | string  | Version of the build, should naturally sort from oldest to latest. |
 | eventTimestamp   | float   | The timestamp of the event, in unix time. |
 | eventAttributes  | dict    | Anything else relating to this particular event will be captured in this attribute as a nested JSON dictionary. |
 
 **Keys should always be camelCase**, whereas values snake_case whenever appropriate. The idea is that all **root keys of the dictionary** are **always present for any event**. Anything custom to a particular event should be nested within eventAttributes. If there is nothing to nest it should be an empty dict (but still present).
 
-In case a server-side event is triggered around a player (vs. AI), always make sure the player_id (or character_id) is captured within eventAttributes. Else you will have no way of knowing which player the event belonged to. For client-side events, as long as we have at least one login event which pairs up the player_id with the client's sessionId, we can always backtrack which other client-side events belonged to a specific player.
+In case a server-side event is triggered around a player (vs. AI), always make sure the player_id (or character_id) is captured within eventAttributes. Else you will have no way of knowing which player the event belonged to. For client-side events, as long as there is at least one login event which pairs up the player_id with the client's sessionId, we can always backtrack which other client-side events belonged to a specific player.
 
 Finally, note that player_id is not a root field of our events, because it will not always be present for any event (e.g. AI induced events, client-side events pre-login, etc.).
+
+#### (2.1.3) - Instrumentation Tips
+
+Your logic should include:
+
+- Augmenting events automatically with all required root fields of an event, only requiring custom event attributes to be passed in (which all go into **eventAttributes**).
+- Batching events up before emitting them (every X seconds or Y events [~payload size], whichever comes first).
+- Making a simple POST request to a configurable endpoint (e.g. which host, URL parameters & headers).
+- Allowing the configuration of retries & have fallback mechanisms (e.g. first try production endpoint, then staging endpoint, then testing endpoint).
+- Capping the bandwidth provided to emitting events, as to never degrade game performance too much.
+- In case hook is client-side: local caching of events in case connection is offline.
 
 ### (2.2) - `/v1/file`
 
