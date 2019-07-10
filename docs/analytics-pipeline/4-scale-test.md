@@ -26,7 +26,7 @@ pip install --upgrade pip
 pip install -r ../../services/python/analytics-pipeline/src/requirements/scale-test.txt
 ```
 
-Second, we will use our scale test script to write 10k batch files into GSC:
+Second, we will use our [scale test script](../../services/python/analytics-pipeline/src/endpoint/scale-test.py) to write 10k batch files into GSC:
 
 ```bash
 python ../../services/python/analytics-pipeline/src/endpoint/scale-test.py \
