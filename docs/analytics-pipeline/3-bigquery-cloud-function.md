@@ -33,9 +33,9 @@ curl --request POST \
 
 After submitting the event, verify in [the BigQuery UI](https://console.cloud.google.com/bigquery):
 
-- There is now a dataset called **events** with table called **events_function** which contains your event.
-- There is now a dataset called **logs** with a table called **events_logs_function** which contains a parse log of your event.
-- The **logs** dataset will also contain two more empty tables: **events_debug_batch** & **events_logs_function_backfill**.
+- There is now a dataset called `events` with table called `events_function` which contains your event.
+- There is now a dataset called `logs` with a table called `events_logs_function` which contains a parse log of your event.
+- The `logs` dataset will also contain two more empty tables: `events_debug_batch` & `events_logs_function_backfill`.
 
 ## (2) - Executing Backfills
 
@@ -67,9 +67,6 @@ pip install --upgrade pip
 
 # Install dependencies with pip:
 pip install -r ../../services/python/analytics-pipeline/src/requirements/dataflow.txt
-
-# Exit virtual environment:
-# deactivate
 ```
 
 Now let's boot our backfill batch script:
@@ -102,7 +99,7 @@ Check out the execution of your Dataflow Batch script in [the Dataflow Console](
 If you pointed the backfill script to files in GCS that were **not already ingested**, verify in [the BigQuery UI](https://console.cloud.google.com/bigquery):
 
 - There are now parse logs from your Dataflow job in `logs.events_logs_function_backfill`
-- There are now Parse logs from the analytics Cloud Function in `logs.events_logs_function`
+- There are now parse logs from the analytics Cloud Function in `logs.events_logs_function`
 - The events have been ingested into `events.events_function`
 
 ---

@@ -24,9 +24,6 @@ pip install --upgrade pip
 
 # Install dependencies with pip
 pip install -r ../../services/python/analytics-pipeline/src/requirements/scale-test.txt
-
-# Exit virtual environment:
-# deactivate
 ```
 
 Second, we will write 10k batch files into GSC:
