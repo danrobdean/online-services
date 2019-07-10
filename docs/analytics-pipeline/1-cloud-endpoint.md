@@ -10,7 +10,7 @@ This part covers the creation of an endpoint to forward analytics data to, which
 
 ### (1.1) - Triggering the Server Code Directly
 
-We will start by calling the script directly via the command line, which will start a local running execution of our endpoint.
+We will start by calling our custom server code directly via the command line, which will start a local running execution of our endpoint.
 
 _Note: The below are UNIX based commands, if you run Windows best skip this step & go straight to [(1.2)](#12---containerizing-the-analytics-endpoint)._
 
@@ -156,7 +156,7 @@ We now first need to make a few edits to our Kubernetes YAML files:
 kubectl apply -f ../../services/k8s/analytics-endpoint
 ```
 
-Next, [get an API key for your GCP](https://console.cloud.google.com/apis/credentials), which you need to pass via the **key** parameter in the url of your POST request: [your gcp api key]. Note that is is currently [not possible to provision this one programmatically](https://issuetracker.google.com/issues/76227920). Also note that **it takes some time before API keys become fully functional, to be safe wait at least 10 minutes** before attempting the below POST requests.
+Next, [get an API key for your GCP](https://console.cloud.google.com/apis/credentials), which you need to pass via the **key** parameter in the url of your POST request: **[your gcp api key]**. Note that is is currently [not possible to provision this one programmatically](https://issuetracker.google.com/issues/76227920). Also note that **it takes some time before API keys become fully functional, to be safe wait at least 10 minutes** before attempting the below POST requests:
 
 ```bash
 # Verify v1/event method is working:
@@ -190,20 +190,20 @@ This method enables you to store analytics events in your GCS analytics bucket. 
 
 The URL takes 6 parameters:
 
-| Parameter               | Class        | Description |
-|-------------------------|--------------|-------------|
-| `key`                   | **Required** | Must be tied to your GCP ([info](https://cloud.google.com/endpoints/docs/openapi/get-started-kubernetes#create_an_api_key_and_set_an_environment_variable)). |
-| `analytics_environment` | Optional     | If omitted, currently defaults to **development**, otherwise must be one of {**testing**, **development**, **staging**, **production**, **live**}. |
-| `event_category`        | Optional     | If omitted, currently defaults to **cold**. |
-| `event_ds`              | Optional     | If omitted, currently defaults to the current UTC date in **YYYY-MM-DD**. |
-| `event_time`            | Optional     | If omitted, currently defaults to current UTC time part, otherwise must be one of {**0-8**, **8-16**, **16-24**}. |
-| `session_id`            | Optional     | If omitted, currently defaults to **session-id-not-available**. |
+| Parameter               | Class    | Description |
+|-------------------------|----------|-------------|
+| `key`                   | Required | Must be tied to your GCP ([info](https://cloud.google.com/endpoints/docs/openapi/get-started-kubernetes#create_an_api_key_and_set_an_environment_variable)). |
+| `analytics_environment` | Should   | Should be set, must be one of {**testing**, **development** (default), **staging**, **production**, **live**}. |
+| `event_category`        | Should   | Should be set, otherwise defaults to **cold**. |
+| `event_ds`              | Optional | Generally not set, defaults to the current UTC date in **YYYY-MM-DD**. |
+| `event_time`            | Optional | Generally not set, defaults to the current UTC time part, otherwise must be one of {**0-8**, **8-16**, **16-24**}. |
+| `session_id`            | Should   | Should be set, otherwise defaults to **session-id-not-available**. |
 
 These `<parameters>` (except for **key**) influence where the data ends up in the GCS bucket:
 
 > gs://gcp-analytics-pipeline-events/data\_type={data\_type}/analytics\_environment={analytics\_environment}/event\_category={event\_category}/event\_ds={event\_ds}/event\_time={event\_time}/{session\_id}/{ts\_fmt}\-{rand_int}
 
-Note that {**data_type**} is determined automatically and can either be **json** (when valid JSON is POST'ed) or **unknown** (otherwise). The fields {**ts_fmt**} & {**rand_int**} are automatically set by the endpoint as well.
+Note that {**data_type**} is determined automatically and can either be **json** (when valid JSON is POST'ed) or **unknown** (otherwise). The fields {**ts_fmt**} (human-readable timestamp) & {**rand_int**} (to avoid collisions) are automatically set by the endpoint as well.
 
 Note that the **event_category** parameter is particularly **important**:
 
