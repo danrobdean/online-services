@@ -3,10 +3,10 @@
 
 # python src/p1-gcs-to-bq-backfill.py \
 #  --execution-environment=DataflowRunner \
-#  --local-sa-key={LOCAL_SA_KEY_JSON_DATAFLOW} \
-#  --gcs-bucket={GCLOUD_PROJECT_ID}-analytics \
+#  --local-sa-key=[local JSON key path for Dataflow] \
+#  --gcs-bucket=[your project id]-analytics \
 #  --topic=cloud-function-gcs-to-bq-topic \
-#  --gcp={GCLOUD_PROJECT_ID}
+#  --gcp=[your project id]
 
 from __future__ import absolute_import
 import apache_beam as beam

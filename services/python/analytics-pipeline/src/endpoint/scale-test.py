@@ -1,10 +1,10 @@
 # Python 3.6.5
 
 # python src/scale-test-local.py \
-#   --gcp-secret-path={LOCAL_SA_KEY_JSON} \
-#   --host=http://events-api-testing.endpoints.{GCLOUD_PROJECT_ID}.cloud.goog:80/ \
-#   --api-key={GCP_API_KEY} \
-#   --bucket-name={GCLOUD_PROJECT_ID}-analytics \
+#   --gcp-secret-path=[local JSON key path] \
+#   --host=http://events-api-testing.endpoints.[your project id].cloud.goog:80/ \
+#   --api-key=[your gcp api key] \
+#   --bucket-name=[your project id]-analytics \
 #   --scale-test-name=scale-test \
 #   --event-category=scale-test \
 #   --analytics-environment=testing \
