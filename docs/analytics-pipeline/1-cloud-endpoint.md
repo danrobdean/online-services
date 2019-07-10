@@ -4,7 +4,7 @@ This part covers the creation of an endpoint to forward analytics data to, which
 
 1. [Initiating, Verifying & Deploying the Analytics Endpoint](#1---initiating-verifying--deploying-the-analytics-endpoint)
 2. [How to Use the Endpoint](#2---how-to-use-the-endpoint)
-3. [GKE Cleanup & Debug](#3---gke-debug--cleanup)
+3. [GKE Debug & Cleanup](#3---gke-debug--cleanup)
 
 ## (1) - Initiating, Verifying & Deploying the Analytics Endpoint
 
@@ -156,7 +156,7 @@ We now first need to make a few edits to our Kubernetes YAML files:
 kubectl apply -f ../../services/k8s/analytics-endpoint
 ```
 
-Next, [get an API key for your GCP](https://console.cloud.google.com/apis/credentials), which you need to pass via the **key** parameter in the url of your POST request: {GCP_API_KEY}. Note that is is currently [not possible to provision this one programmatically](https://issuetracker.google.com/issues/76227920). Also note that **it takes some time before API keys become fully functional, to be safe wait at least 10 minutes** before attempting the below POST requests.
+Next, [get an API key for your GCP](https://console.cloud.google.com/apis/credentials), which you need to pass via the **key** parameter in the url of your POST request: {**GCP_API_KEY**}. Note that is is currently [not possible to provision this one programmatically](https://issuetracker.google.com/issues/76227920). Also note that **it takes some time before API keys become fully functional, to be safe wait at least 10 minutes** before attempting the below POST requests.
 
 ```bash
 # Verify v1/event method is working:
@@ -201,16 +201,16 @@ The URL takes 6 parameters:
 
 These `<parameters>` (except for **key**) influence where the data ends up in the GCS bucket:
 
-> gs://gcp-analytics-pipeline-events/data\_type={data\_type}/analytics\_environment={analytics\_environment}/event\_category={event\_category}/event\_ds={event\_ds}/event\_time={event\_time}/{session\_id}/{ts\_fmt}\-{int}'
+> gs://gcp-analytics-pipeline-events/data\_type={data\_type}/analytics\_environment={analytics\_environment}/event\_category={event\_category}/event\_ds={event\_ds}/event\_time={event\_time}/{session\_id}/{ts\_fmt}\-{rand_int}
 
-Note that **data_type** is determined automatically and can either be **json** (when valid JSON is POST'ed) or **unknown** (otherwise). The fields **ts_fmt** & **int** are automatically set by the endpoint as well.
+Note that {**data_type**} is determined automatically and can either be **json** (when valid JSON is POST'ed) or **unknown** (otherwise). The fields {**ts_fmt**} & {**rand_int**} are automatically set by the endpoint as well.
 
 Note that the **event_category** parameter is particularly **important**:
 
-- When set to **function** all data contained in the POST request will be **ingested into native BigQuery storage** using the Cloud Function we created when we deployed [the analytics module with Terraform]((https://github.com/improbable/online-services/tree/master/services/terraform)).
+- When set to **function** all data contained in the POST request will be **ingested into native BigQuery storage** using [the analytics Cloud Function](https://console.cloud.google.com/functions/list) (`function-gcs-to-bq-.*`) we created when we deployed [the analytics module with Terraform]((https://github.com/improbable/online-services/tree/master/services/terraform)).
 - When set to **anything else** all data contained in the POST request will **arrive in GCS**, but will **not by default be ingested into native BigQuery storage**. This data can however still be accessed by BigQuery by using GCS as an external data source.
 
-Note that **function** is a completely arbitrary string, but we have established [GCS notifications to trigger Pub/Sub notifications to our analytics Pub/Sub Topic](https://github.com/improbable/online-services/tree/master/services/terraform/module-analytics/pubsub.tf) whenever files are created on this particular GCS prefix. In this case these notifications invoke our analytics Cloud Function which ingests them into native BigQuery storage. Over-time we can imagine developers extending this setup in new ways: perhaps anything written into **crashdump** (either via **v1/event** or **v1/file**) will trigger a different Cloud Function which can parse a crashdump and write relevant information into BigQuery, or **fps** will be used for high volume frames-per-second events that are subsequently aggregated with a Dataflow (Stream / Batch) script _before_ being written into BigQuery.
+Note that **function** is a completely arbitrary string, but we have established [GCS notifications to trigger Pub/Sub notifications to our analytics Pub/Sub Topic](https://github.com/improbable/online-services/tree/master/services/terraform/module-analytics/pubsub.tf) whenever files are created on this particular GCS prefix. In this case these notifications invoke our analytics Cloud Function which ingests these files into native BigQuery storage. Over-time we can imagine developers extending this setup in new ways: perhaps crashdumps are written into **crashdump** (either via **v1/event** or **v1/file**) which will trigger a different Cloud Function with the appropriate logic to parse it and write relevant information into BigQuery, or **fps** will be used for high volume frames-per-second events that are subsequently aggregated with a Dataflow (Stream / Batch) script _before_ being written into BigQuery.
 
 #### (2.1.2) - The JSON Event Schema
 
@@ -219,8 +219,8 @@ Each analytics event, which is a JSON dictionary, should adhere to the following
 | Key              | Type    | Description |
 |------------------|---------|-------------|
 | eventEnvironment | string  | One of  {**testing**, **development**, **staging**, **production**, **live**}. |
-| eventIndex       | integer | Increments with one with each event per eventSource, allows us to spot missing data. |
-| eventSource      | string  | Source of the event, e.g. worker type. |
+| eventIndex       | integer | Increments with one with each event per sessionId, allows us to spot missing data. |
+| eventSource      | string  | Source of the event, ~ worker type (e.g. client, server, ...). |
 | eventClass       | string  | A higher order mnemonic classification of events (e.g. session). |
 | eventType        | string  | A mnemonic event identifier (e.g. session_start). |
 | sessionId        | string  | The session_id, which is unique per client/server session. |
