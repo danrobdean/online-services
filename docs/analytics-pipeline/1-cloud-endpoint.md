@@ -190,14 +190,14 @@ This method enables you to store analytics events in your GCS analytics bucket. 
 
 The URL takes 6 parameters:
 
-| Parameter             | Class    | Description |
-|-----------------------|----------|-------------|
-| key                   | Required | Must be tied to your GCP ([info](https://cloud.google.com/endpoints/docs/openapi/get-started-kubernetes#create_an_api_key_and_set_an_environment_variable)). |
-| analytics_environment | Optional | If omitted, currently defaults to **development**, otherwise must be one of {**testing**, **development**, **staging**, **production**, **live**}. |
-| event_category        | Optional | If omitted, currently defaults to **cold**. |
-| event_ds              | Optional | If omitted, currently defaults to the current UTC date in **YYYY-MM-DD**. |
-| event_time            | Optional | If omitted, currently defaults to current UTC time part, otherwise must be one of {**0-8**, **8-16**, **16-24**}. |
-| session_id            | Optional | If omitted, currently defaults to **session-id-not-available**. |
+| Parameter               | Class        | Description |
+|-------------------------|--------------|-------------|
+| `key`                   | **Required** | Must be tied to your GCP ([info](https://cloud.google.com/endpoints/docs/openapi/get-started-kubernetes#create_an_api_key_and_set_an_environment_variable)). |
+| `analytics_environment` | Optional     | If omitted, currently defaults to **development**, otherwise must be one of {**testing**, **development**, **staging**, **production**, **live**}. |
+| `event_category`        | Optional     | If omitted, currently defaults to **cold**. |
+| `event_ds`              | Optional     | If omitted, currently defaults to the current UTC date in **YYYY-MM-DD**. |
+| `event_time`            | Optional     | If omitted, currently defaults to current UTC time part, otherwise must be one of {**0-8**, **8-16**, **16-24**}. |
+| `session_id`            | Optional     | If omitted, currently defaults to **session-id-not-available**. |
 
 These `<parameters>` (except for **key**) influence where the data ends up in the GCS bucket:
 
@@ -216,17 +216,17 @@ Note that **function** is a completely arbitrary string, but we have established
 
 Each analytics event, which is a JSON dictionary, should adhere to the following JSON schema:
 
-| Key              | Type    | Description |
-|------------------|---------|-------------|
-| eventEnvironment | string  | One of  {**testing**, **development**, **staging**, **production**, **live**}. |
-| eventIndex       | integer | Increments with one with each event per sessionId, allows us to spot missing data. |
-| eventSource      | string  | Source of the event, ~ worker type (e.g. client/server). |
-| eventClass       | string  | A higher order mnemonic classification of events (e.g. session). |
-| eventType        | string  | A mnemonic event identifier (e.g. session_start). |
-| sessionId        | string  | The session_id, which is unique per worker (e.g. client/server) session. |
-| buildVersion     | string  | Version of the build, should naturally sort from oldest to latest. |
-| eventTimestamp   | float   | The timestamp of the event, in unix time. |
-| eventAttributes  | dict    | Anything else relating to this particular event will be captured in this attribute as a nested JSON dictionary. |
+| Key                | Type    | Description |
+|--------------------|---------|-------------|
+| `eventEnvironment` | string  | One of  {**testing**, **development**, **staging**, **production**, **live**}. |
+| `eventIndex`       | integer | Increments with one with each event per sessionId, allows us to spot missing data. |
+| `eventSource`      | string  | Source of the event, ~ worker type (e.g. client/server). |
+| `eventClass`       | string  | A higher order mnemonic classification of events (e.g. session). |
+| `eventType`        | string  | A mnemonic event identifier (e.g. session_start). |
+| `sessionId`        | string  | The session_id, which is unique per worker (e.g. client/server) session. |
+| `buildVersion`     | string  | Version of the build, should naturally sort from oldest to latest. |
+| `eventTimestamp`   | float   | The timestamp of the event, in unix time. |
+| `eventAttributes`  | dict    | Anything else relating to this particular event will be captured in this attribute as a nested JSON dictionary. |
 
 **Keys should always be camelCase**, whereas values snake_case whenever appropriate. The idea is that all **root keys of the dictionary** are **always present for any event**. Anything custom to a particular event should be nested within eventAttributes. If there is nothing to nest it should be an empty dict (but still present).
 

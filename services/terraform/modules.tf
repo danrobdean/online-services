@@ -1,6 +1,8 @@
 # This file sources the available Terraform modules: one for the Gateway and one for Analytics.
 
-# If you do not wish to deploy the gateway, comment out the gateway section below!
+# If you do not wish to deploy the gateway, comment out the Gateway Section below!
+
+# === Start Gateway Section === #
 
 module "gateway" {
   source           = "./module-gateway"
@@ -34,7 +36,15 @@ output "playfab_auth_dns" {
   value = module.gateway.playfab_auth_dns
 }
 
-# If you do not wish to deploy analytics, comment out the analytics section below!
+output "redis_host" {
+  value = module.gateway.redis_host
+}
+
+# === End Gateway Section === #
+
+# If you do not wish to deploy analytics, comment out the Analytics Section below!
+
+# === Start Analytics Section === #
 
 module "analytics" {
   source                           = "./module-analytics"
@@ -51,3 +61,5 @@ output "analytics_host" {
 output "analytics_dns" {
   value = module.analytics.analytics_dns
 }
+
+# === End Analytics Section === #

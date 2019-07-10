@@ -9,7 +9,7 @@ Before you begin..
 
 There are currently 4 parts to the analytics pipeline documentation:
 
-1. [Creating an endpoint to POST your JSON data to, which sanitizes, augments & finally stores the events in a Google Cloud Storage (GCS) bucket](./1-cloud-endpoint.md) [**required**].
+1. [Creating an endpoint to POST your JSON data to](./1-cloud-endpoint.md) [**required**].
 2. [Using GCS as an external data source through BigQuery](./2-bigquery-gcs-external.md) [**required**].
-3. [Deploying a Cloud Function that forwards events from GCS into native BigQuery storage (as opposed to using GCS as an external data source)](./3-bigquery-cloud-function.md) [**optional**].
+3. [Deploying a Cloud Function that forwards events from GCS into native BigQuery storage](./3-bigquery-cloud-function.md) [**optional**].
 4. [Scale testing your analytics pipeline](./4-scale-test.md) [**optional**].
