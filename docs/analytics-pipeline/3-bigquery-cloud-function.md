@@ -28,7 +28,7 @@ In order to utilize the function, you have to make sure **event_category** is se
 curl --request POST \
   --header "content-type:application/json" \
   --data "{\"eventSource\":\"client\",\"eventClass\":\"test\",\"eventType\":\"cloud_function\",\"eventTimestamp\":1562599755,\"eventIndex\":6,\"sessionId\":\"f58179a375290599dde17f7c6d546d78\",\"buildVersion\":\"2.0.13\",\"eventEnvironment\":\"testing\",\"eventAttributes\":{\"playerId\": 12345678}}" \
-  "http://analytics.endpoints.{GCLOUD_PROJECT_ID}.cloud.goog:80/v1/event?key={GCP_API_KEY}&analytics_environment=testing&event_category=function&session_id=f58179a375290599dde17f7c6d546d78"
+  "http://analytics.endpoints.[your project id].cloud.goog:80/v1/event?key=[your gcp api key]&analytics_environment=testing&event_category=function&session_id=f58179a375290599dde17f7c6d546d78"
 ```
 
 After submitting the event, verify in [the BigQuery UI](https://console.cloud.google.com/bigquery):
@@ -48,7 +48,7 @@ For these situation we provide a batch script which you can point to:
 
 The script is written using [Apache Beam's Python SDK](https://beam.apache.org/documentation/sdks/python/), and executed on [Cloud Dataflow](https://cloud.google.com/dataflow/). As these backfills are executed on an ad-hoc basis (only when required) we do not package it up and/or deploy it into production.
 
-First, navigate to the [service account overview in the Cloud Console](https://console.cloud.google.com/iam-admin/serviceaccounts) and store a JSON key from the service account named **Dataflow Batch** locally on your machine + write down the file path: {**LOCAL_SA_KEY_JSON_DATAFLOW**}
+First, navigate to the [service account overview in the Cloud Console](https://console.cloud.google.com/iam-admin/serviceaccounts) and store a JSON key from the service account named **Dataflow Batch** locally on your machine + write down the file path: **[local JSON key path for Dataflow]**.
 
 Second, let's create a virtual Python environment & install dependencies:
 
@@ -73,16 +73,16 @@ Now let's boot our backfill batch script:
 
 ```bash
 # Set environment variable for credentials
-export GOOGLE_APPLICATION_CREDENTIALS={LOCAL_SA_KEY_JSON_DATAFLOW}
+export GOOGLE_APPLICATION_CREDENTIALS=[local JSON key path for Dataflow]
 
 # Trigger script!
 python ../../services/python/analytics-pipeline/src/dataflow/p1-gcs-to-bq-backfill.py  \
   --setup-file=../../services/python/analytics-pipeline/src/dataflow/setup.py \ # Required
   --execution-environment=DataflowRunner \ # Required
-  --local-sa-key={LOCAL_SA_KEY_JSON_DATAFLOW} \ # Required
-  --gcs-bucket={GCLOUD_PROJECT_ID}-analytics \ # Required
+  --local-sa-key=[local JSON key path for Dataflow] \ # Required
+  --gcs-bucket=[your project id]-analytics \ # Required
   --topic=cloud-function-gcs-to-bq-topic \ # Required
-  --gcp={GCLOUD_PROJECT_ID} \ # Required
+  --gcp=[your project id] \ # Required
   --analytics-environment=testing \ # Optional, if omitted will pick up all environments: {testing, development, staging, development, production, live}
   --event-category=cold \ # Required
   --event-ds-start=2019-01-01 \ # Optional, if omitted will default to: 2019-01-01

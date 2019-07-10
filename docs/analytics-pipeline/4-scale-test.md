@@ -30,10 +30,10 @@ Second, we will write 10k batch files into GSC:
 
 ```bash
 python ../../services/python/analytics-pipeline/src/endpoint/scale-test.py \
-  --gcp-secret-path={LOCAL_SA_KEY_JSON} \
-  --host=http://analytics.endpoints.{GCLOUD_PROJECT_ID}.cloud.goog/ \
-  --api-key={GCP_API_KEY} \
-  --bucket-name={GCLOUD_PROJECT_ID}-analytics \
+  --gcp-secret-path=[local JSON key path] \
+  --host=http://analytics.endpoints.[your project id].cloud.goog/ \
+  --api-key=[your gcp api key] \
+  --bucket-name=[your project id]-analytics \
   --scale-test-name=scale-test \
   --event-category=function \
   --analytics-environment=testing \
@@ -41,7 +41,7 @@ python ../../services/python/analytics-pipeline/src/endpoint/scale-test.py \
   --n=10000
 ```
 
-After the script finishes, copy {**SCALE_TEST_NAME**, **EVENT_DS**, **EVENT_TIME**} from the terminal output.
+After the script finishes, copy the **[scale test name]**, **[event ds]** & **[event time]** from the terminal output.
 
 ## (2) - Verify Events in GCS and BigQuery
 
@@ -63,7 +63,7 @@ FROM
       batchId,
       COUNT(*) AS n
     FROM table_test
-    WHERE eventType = '{SCALE_TEST_NAME}'
+    WHERE eventType = '[scale test name]'
     GROUP BY 1
     ) a
 GROUP BY 1
@@ -72,7 +72,7 @@ GROUP BY 1
 bq query \
   --location=EU \
   --use_legacy_sql=false \
-  --external_table_definition=table_test::batchId:STRING,eventType:STRING@NEWLINE_DELIMITED_JSON=gs://{GCLOUD_PROJECT_ID}-analytics/data_type=json/analytics_environment=testing/event_category=function/event_ds={EVENT_DS}/event_time={EVENT_TIME}/{SCALE_TEST_NAME}/\* \
+  --external_table_definition=table_test::batchId:STRING,eventType:STRING@NEWLINE_DELIMITED_JSON=gs://[your project id]-analytics/data_type=json/analytics_environment=testing/event_category=function/event_ds=[event ds]/event_time=[event time]/[scale test name]/\* \
   $QUERY
 
 # +---+-------+------------------+
@@ -96,7 +96,7 @@ FROM
     (
     SELECT batch_id, COUNT(*) as n
     FROM events.events_function
-    WHERE event_type = '{SCALE_TEST_NAME}'
+    WHERE event_type = '[scale test name]'
     GROUP BY 1
     ) a
 GROUP BY 1

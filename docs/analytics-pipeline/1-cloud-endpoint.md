@@ -27,12 +27,12 @@ pip install --upgrade pip
 # Install dependencies with pip:
 pip install -r ../../services/python/analytics-pipeline/src/requirements/endpoint.txt
 
-# Set required environment variables
-export GCP={GCLOUD_PROJECT_ID}
-export BUCKET_NAME={GCLOUD_PROJECT_ID}-analytics
-export SECRET_JSON={LOCAL_SA_KEY_JSON}
-export SECRET_P12={LOCAL_SA_KEY_P12}
-export EMAIL=analytics-gcs-writer@{GCLOUD_PROJECT_ID}.iam.gserviceaccount.com
+# Set required environment variables, fill in []:
+export GCP=[your project id]
+export BUCKET_NAME=[your project id]-analytics
+export SECRET_JSON=[local JSON key path]
+export SECRET_P12=[local JSON key path]
+export EMAIL=analytics-gcs-writer@[your project id].iam.gserviceaccount.com
 
 # Trigger script!
 python ../../services/python/analytics-pipeline/src/endpoint/main.py
@@ -66,19 +66,19 @@ Next we are going containerize our analytics endpoint using [Docker](https://www
 
 ```bash
 # Build container:
-docker build -f ../../services/docker/analytics-endpoint/Dockerfile -t "gcr.io/{GCLOUD_PROJECT_ID}/analytics-endpoint" ../../services
+docker build -f ../../services/docker/analytics-endpoint/Dockerfile -t "gcr.io/[your project id]/analytics-endpoint" ../../services
 
 # Check inside container:
 docker run -it \
-  --env GCP={GCLOUD_PROJECT_ID} \
-  --env BUCKET_NAME={GCLOUD_PROJECT_ID}-analytics \
+  --env GCP=[your project id] \
+  --env BUCKET_NAME=[your project id]-analytics \
   --env SECRET_JSON=/secrets/json/analytics-gcs-writer.json \
   --env SECRET_P12=/secrets/p12/analytics-gcs-writer.p12 \
-  --env EMAIL=analytics-gcs-writer@{GCLOUD_PROJECT_ID}.iam.gserviceaccount.com \
-  -v {LOCAL_SA_KEY_JSON}:/secrets/json/analytics-gcs-writer.json \
-  -v {LOCAL_SA_KEY_P12}:/secrets/p12/analytics-gcs-writer.p12 \
+  --env EMAIL=analytics-gcs-writer@[your project id].iam.gserviceaccount.com \
+  -v [local JSON key path]:/secrets/json/analytics-gcs-writer.json \
+  -v [local p12 key path]:/secrets/p12/analytics-gcs-writer.p12 \
   --entrypoint bash \
-  gcr.io/{GCLOUD_PROJECT_ID}/analytics-endpoint:latest
+  gcr.io/[your project id]/analytics-endpoint:latest
 
 # Tip - Type & submit 'exit' to stop the container
 ```
@@ -88,15 +88,15 @@ Now let's verify the container is working as expected, by running it locally:
 ```bash
 # Run container locally:
 docker run \
-  --env GCP={GCLOUD_PROJECT_ID} \
-  --env BUCKET_NAME={GCLOUD_PROJECT_ID}-analytics \
+  --env GCP=[your project id] \
+  --env BUCKET_NAME=[your project id]-analytics \
   --env SECRET_JSON=/secrets/json/analytics-gcs-writer.json \
   --env SECRET_P12=/secrets/p12/analytics-gcs-writer.p12 \
-  --env EMAIL=analytics-gcs-writer@{GCLOUD_PROJECT_ID}.iam.gserviceaccount.com \
-  -v {LOCAL_SA_KEY_JSON}:/secrets/json/analytics-gcs-writer.json \
-  -v {LOCAL_SA_KEY_P12}:/secrets/p12/analytics-gcs-writer.p12 \
+  --env EMAIL=analytics-gcs-writer@[your project id].iam.gserviceaccount.com \
+  -v [local JSON key path]:/secrets/json/analytics-gcs-writer.json \
+  -v [local p12 key path]:/secrets/p12/analytics-gcs-writer.p12 \
   -p 8080:8080 \
-  gcr.io/{GCLOUD_PROJECT_ID}/analytics-endpoint:latest
+  gcr.io/[your project id]/analytics-endpoint:latest
 ```
 
 As before, in a different terminal window, submit the follow 2 curl POST requests:
@@ -115,18 +115,18 @@ curl --request POST \
   "http://0.0.0.0:8080/v1/file?key=local_so_does_not_matter&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"
 
 # To stop the running container:
-docker ps # Copy {CONTAINER_ID}
-docker kill {CONTAINER_ID}
+docker ps # Copy the [container id]
+docker kill [container id]
 ```
 
 In case the requests were successful, we can now push the container to GCR:
 
 ```bash
 # Make sure you are in the right project
-gcloud config set project {GCLOUD_PROJECT_ID}
+gcloud config set project [your project id]
 
 # Upload container to Google Container Registry (GCR)
-docker push gcr.io/{GCLOUD_PROJECT_ID}/analytics-endpoint:latest
+docker push gcr.io/[your project id]/analytics-endpoint:latest
 
 # Verify your image is uploaded
 gcloud container images list
@@ -134,21 +134,21 @@ gcloud container images list
 
 ### (1.3) - Deploying Analytics Endpoint Container onto GKE with Cloud Endpoints
 
-At this point we have a working container hosted in GCR, which GKE can pull containers from. We will now deploy our analytics endpoint on top of GKE. You can check out what your {**K8S_CLUSTER_NAME**, **K8S_CLUSTER_LOCATION**} are [in the Cloud Console](https://console.cloud.google.com/kubernetes/list).
+At this point we have a working container hosted in GCR, which GKE can pull containers from. We will now deploy our analytics endpoint on top of GKE. You can check out what your **[your k8s cluster name]** & **[your k8s cluster location]** are [in the Cloud Console](https://console.cloud.google.com/kubernetes/list).
 
 ```bash
 # Make sure you have the credentials to talk to the right cluster:
-gcloud container clusters get-credentials {K8S_CLUSTER_NAME} --zone {K8S_CLUSTER_LOCATION}
+gcloud container clusters get-credentials [your k8s cluster name] --zone [your k8s cluster location]
 
 # Or if you already do - that you're configured to talk to the right cluster:
-kubectl config get-contexts # Copy the correct {K8S_CONTEXT_NAME}
-kubectl config use-context {K8S_CONTEXT_NAME}
+kubectl config get-contexts # Copy the correct [your k8s context name]
+kubectl config use-context [your k8s context name]
 ```
 
 We now first need to make a few edits to our Kubernetes YAML files:
 
-- Update the [deployment.yaml](../../services/k8s/analytics-endpoint/deployment.yaml) file with your {**GCLOUD_PROJECT_ID**}.
-- Update the [service.yaml](../../services/k8s/analytics-endpoint/service.yaml) file with your {**ANALYTICS_HOST_IP**}. You can check out what this value is by navigating into [terraform/](../../services/terraform) & running `terraform output` (look for **analytics_host**).
+- Update the [deployment.yaml](../../services/k8s/analytics-endpoint/deployment.yaml) file with **[your project id]**.
+- Update the [service.yaml](../../services/k8s/analytics-endpoint/service.yaml) file with **[your Analytics IP address]**. You can check out what this value is by navigating into [terraform/](../../services/terraform) & running `terraform output` (look for **analytics_host**).
 
 **Afterwards** deploy the deployment & service to GKE:
 
@@ -156,20 +156,20 @@ We now first need to make a few edits to our Kubernetes YAML files:
 kubectl apply -f ../../services/k8s/analytics-endpoint
 ```
 
-Next, [get an API key for your GCP](https://console.cloud.google.com/apis/credentials), which you need to pass via the **key** parameter in the url of your POST request: {**GCP_API_KEY**}. Note that is is currently [not possible to provision this one programmatically](https://issuetracker.google.com/issues/76227920). Also note that **it takes some time before API keys become fully functional, to be safe wait at least 10 minutes** before attempting the below POST requests.
+Next, [get an API key for your GCP](https://console.cloud.google.com/apis/credentials), which you need to pass via the **key** parameter in the url of your POST request: [your gcp api key]. Note that is is currently [not possible to provision this one programmatically](https://issuetracker.google.com/issues/76227920). Also note that **it takes some time before API keys become fully functional, to be safe wait at least 10 minutes** before attempting the below POST requests.
 
 ```bash
 # Verify v1/event method is working:
 curl --request POST \
   --header "content-type:application/json" \
   --data "{\"eventSource\":\"client\",\"eventClass\":\"test\",\"eventType\":\"endpoint_k8s_containerized\",\"eventTimestamp\":1562599755,\"eventIndex\":6,\"sessionId\":\"f58179a375290599dde17f7c6d546d78\",\"buildVersion\":\"2.0.13\",\"eventEnvironment\":\"testing\",\"eventAttributes\":{\"playerId\": 12345678}}" \
-  "http://analytics.endpoints.{GCLOUD_PROJECT_ID}.cloud.goog:80/v1/event?key={GCP_API_KEY}&analytics_environment=testing&event_category=cold&session_id=f58179a375290599dde17f7c6d546d78"
+  "http://analytics.endpoints.[your project id].cloud.goog:80/v1/event?key=[your gcp api key]&analytics_environment=testing&event_category=cold&session_id=f58179a375290599dde17f7c6d546d78"
 
 # Verify v1/file method is working:
 curl --request POST \
   --header 'content-type:application/json' \
   --data "{\"content_type\":\"text/plain\", \"md5_digest\": \"XKvMhvwrORVuxdX54FQEdg==\"}" \
-  "http://analytics.endpoints.{GCLOUD_PROJECT_ID}.cloud.goog:80/v1/file?key={GCP_API_KEY}&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"
+  "http://analytics.endpoints.[your project id].cloud.goog:80/v1/file?key=[your gcp api key]&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"
 ```
 
 If both requests succeeded, this means you have now deployed your Analytics Endpoint! :confetti_ball:
@@ -260,13 +260,13 @@ openssl md5 -binary worker-crashdump-test.gz | base64
 curl --request POST \
   --header 'content-type:application/json' \
   --data "{\"content_type\":\"text/plain\", \"md5_digest\": \"XKvMhvwrORVuxdX54FQEdg==\"}" \
-  "http://analytics.endpoints.{GCLOUD_PROJECT_ID}.cloud.goog:80/v1/file?key={GCP_API_KEY}&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"
+  "http://analytics.endpoints.[your project id].cloud.goog:80/v1/file?key=[your gcp api key]&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"
 
 # Grab the signed URL & headers from the returned JSON dictionary (if successful) & write file directly into GCS within 30 minutes:
 curl \
   -H 'Content-Type: text/plain' \
   -H 'Content-MD5: XKvMhvwrORVuxdX54FQEdg==' \
-  -X PUT "https://storage.googleapis.com/gcp-analytics-pipeline-events/data_type=file/analytics_environment=testing/event_category=crashdump-worker/event_ds=2019-06-18/event_time=8-16/parent/child-451684?GoogleAccessId=event-gcs-writer%40{GCLOUD_PROJECT_ID}.iam.gserviceaccount.com&Expires=1560859391&Signature=tO0bvOzgbF%2F%2FYt%2F%2BHr5L9oH1Y9yQIYMBFIuFyb36L3UhSzalq3%2FRYmto2lguceSoHEtknZQaeI1zDqRwEqfGkPTDGMY9bE1wNR9aT%2F8aAitC0czl6cOPVyJ%2FE1%2B7riEBHXcJyQQSsDMUeJWWT50OKWX4yM961kfJK7c7mv0bvwJPint7Eo5iPTyR9ax57gb4bgSgtFV5MM5c%2FvCIH7%2BuUAiXSbW9CWsA56UJRNf%2BB0YplRtB12VlxWyQlZKpHFrU5EoLQ3vO3YXsQidkjm1it%2BCl1uQptvX%2BZCI7eleEiZANpVX46%2B0MFSXi%2FidMHQSVEF96iGTaFvwzpoiT%2Bj%2F42g%3D%3D" \
+  -X PUT "https://storage.googleapis.com/gcp-analytics-pipeline-events/data_type=file/analytics_environment=testing/event_category=crashdump-worker/event_ds=2019-06-18/event_time=8-16/parent/child-451684?GoogleAccessId=event-gcs-writer%40[your project id].iam.gserviceaccount.com&Expires=1560859391&Signature=tO0bvOzgbF%2F%2FYt%2F%2BHr5L9oH1Y9yQIYMBFIuFyb36L3UhSzalq3%2FRYmto2lguceSoHEtknZQaeI1zDqRwEqfGkPTDGMY9bE1wNR9aT%2F8aAitC0czl6cOPVyJ%2FE1%2B7riEBHXcJyQQSsDMUeJWWT50OKWX4yM961kfJK7c7mv0bvwJPint7Eo5iPTyR9ax57gb4bgSgtFV5MM5c%2FvCIH7%2BuUAiXSbW9CWsA56UJRNf%2BB0YplRtB12VlxWyQlZKpHFrU5EoLQ3vO3YXsQidkjm1it%2BCl1uQptvX%2BZCI7eleEiZANpVX46%2B0MFSXi%2FidMHQSVEF96iGTaFvwzpoiT%2Bj%2F42g%3D%3D" \
   --data-binary '@worker-crashdump-test.gz'
 ```
 
@@ -279,34 +279,34 @@ The following commands can help you check what is happening with your pods in GK
 kubectl get deployments
 
 # Show me all pods:
-kubectl get pods
+kubectl get pods # Copy the [pod id]
 
 # View details of pods:
-kubectl describe pod {POD_ID}
+kubectl describe pod [pod id]
 
 # Show logs of a specific container:
-kubectl logs {POD_ID} {CONTAINER_NAME}
+kubectl logs [pod id] [container name]
 
 # Step inside running container
-kubectl exec {POD_ID} -c {CONTAINER_NAME} -it bash
+kubectl exec [pod id] -c [container name] -it bash
 
-# Where {CONTAINER_NAME} = analytics-deployment-server or analytics-deployment-endpoint
+# Where [container name] = analytics-deployment-server or analytics-deployment-endpoint
 ```
 
 In case you want remove your workloads (service & deployment) from GKE, you can run the following commands:
 
 ```bash
 # Obtain list of all your deployments:
-kubectl get deployments # Copy the {K8S_DEPLOYMENT_NAME}
+kubectl get deployments # Copy the [deployment name]
 
 # Delete your deployment:
-kubectl delete deployment {K8S_DEPLOYMENT_NAME}
+kubectl delete deployment [deployment name]
 
 # Obtain list of all your services:
-kubectl get services # Copy the {K8S_SERVICE_NAME}
+kubectl get services # Copy the [service name]
 
 # Delete your service:
-kubectl delete service {K8S_SERVICE_NAME}
+kubectl delete service [service name]
 ```
 
 ---
