@@ -39,7 +39,7 @@ After submitting the event, verify in [the BigQuery UI](https://console.cloud.go
 
 ## (2) - Executing Backfills
 
-The situation might arise that there are events in GCS that you wish to still ingest into native BigQuery storage using the Cloud Function. This could be because you either dropped your events table in BigQuery, or for instance did not write these events with the correct parameter setting (`..&event_category=function..`).
+You might find yourself in the situation that there are events in GCS that you wish to ingest into native BigQuery storage using the Cloud Function. This could be because you either dropped your events table in BigQuery, or for instance did not write these events with the correct parameter setting (`..&event_category=function..`).
 
 For these situation we provide a batch script which you can point to:
 
@@ -50,7 +50,7 @@ The script is written using [Apache Beam's Python SDK](https://beam.apache.org/d
 
 First, navigate to the [service account overview in the Cloud Console](https://console.cloud.google.com/iam-admin/serviceaccounts) and store a JSON key from the service account named **Dataflow Batch** locally on your machine + write down the file path: **[local JSON key path for Dataflow]**.
 
-Second, let's create a virtual Python environment & install dependencies:
+Second, as usual, let's create a virtual Python environment & install dependencies:
 
 ```bash
 # Step out of your current Python 3 virtual environment, if you are in one:
