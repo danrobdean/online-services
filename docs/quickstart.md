@@ -48,13 +48,13 @@ It's possible to do a lot through Google Cloud's web console, but for this step 
 
 Our example configs are stored in [`/services/terraform`](../services/terraform), which contains base infrastructure used by all services, and [`/services/terraform/module-gateway`](../services/terraform/module-gateway), which only contains the infrastructure particular to the Gateway. The files are:
 
-- [`../services/terraform/variables.tf`](../services/terraform/variables.tf) - variables used for configuration, such as your Google Cloud project ID. You can define these in this configuration file, or leave them blank and provide them when you run `terraform plan` (we'll get there in a second).
-- [`../services/terraform/providers.tf`](../services/terraform/providers.tf) - this file tells Terraform which cloud providers we're using.
-- [`../services/terraform/gke.tf`](../services/terraform/gke.tf) - this instructs Terraform how to build our Kubernetes cluster.
-- [`../services/terraform/services.tf`](../services/terraform/services.tf) - enable required Google Cloud APIs.
-- [`../services/terraform/module-gateway/memorystore.tf`](../services/terraform/module-gateway/memorystore.tf) - this defines the Google MemoryStore (Redis) instance.
-- [`../services/terraform/module-gateway/ip.tf`](../services/terraform/module-gateway/ip.tf) - this is used to create static IP addresses for the endpoints which need them.
-- [`../services/terraform/module-gateway/endpoints.tf`](../services/terraform/module-gateway/endpoints.tf) - enable required Google Cloud Endpoints.
+- [`variables.tf`](../services/terraform/variables.tf) - variables used for configuration, such as your Google Cloud project ID. You can define these in this configuration file, or leave them blank and provide them when you run `terraform plan` (we'll get there in a second).
+- [`providers.tf`](../services/terraform/providers.tf) - this file tells Terraform which cloud providers we're using.
+- [`gke.tf`](../services/terraform/gke.tf) - this instructs Terraform how to build our Kubernetes cluster.
+- [`services.tf`](../services/terraform/services.tf) - enable required Google Cloud APIs.
+- [`module-gateway/memorystore.tf`](../services/terraform/module-gateway/memorystore.tf) - this defines the Google MemoryStore (Redis) instance.
+- [`module-gateway/ip.tf`](../services/terraform/module-gateway/ip.tf) - this is used to create static IP addresses for the endpoints which need them.
+- [`module-gateway/endpoints.tf`](../services/terraform/module-gateway/endpoints.tf) - enable required Google Cloud Endpoints.
 
 By default you will provision everything required for all services. If you however at this stage wish to exclude the Analytics Pipeline, first comment out the Analytics Section in [../services/terraform/modules.tf](../services/terraform/modules.tf). Note that the Deployment Pool does not require anything beyond what the Gateway requires, hence we do not have a separate Terraform module for it. Next simply run `terraform init` in this directory to ensure the right plugins are installed, and then run `terraform plan -out "my_plan"`.
 
