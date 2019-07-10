@@ -90,7 +90,7 @@ python ../../services/python/analytics-pipeline/src/dataflow/p1-gcs-to-bq-backfi
   --event-time=8-16 # Optional, if omitted will pick up all times: {0-8, 8-16, 16-24}
 ```
 
-Note that we are simply following the GCS file tree with our inputs:
+Note that we are following the GCS file tree with many of our inputs:
 
 > gs://{gcs-bucket}/data_type=json/analytics_environment={testing|development|staging|production|live}/event_category={!function}/event_ds={yyyy-mm-dd}/event_time={0-8|8-16|16-24}/*
 
