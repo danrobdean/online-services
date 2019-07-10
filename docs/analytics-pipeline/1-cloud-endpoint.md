@@ -199,18 +199,20 @@ The URL takes 6 parameters:
 | `event_time`            | Optional | Generally not set, defaults to the current UTC time part, otherwise must be one of {**0-8**, **8-16**, **16-24**}. |
 | `session_id`            | Should   | Should be set, otherwise defaults to **session-id-not-available**. |
 
-These `<parameters>` (except for **key**) influence where the data ends up in the GCS bucket:
+These parameters (except for `key`) influence where the data ends up in the GCS bucket:
 
 > gs://gcp-analytics-pipeline-events/data\_type={data\_type}/analytics\_environment={analytics\_environment}/event\_category={event\_category}/event\_ds={event\_ds}/event\_time={event\_time}/{session\_id}/{ts\_fmt}\-{rand_int}
 
-Note that {**data_type**} is determined automatically and can either be **json** (when valid JSON is POST'ed) or **unknown** (otherwise). The fields {**ts_fmt**} (human-readable timestamp) & {**rand_int**} (to avoid collisions) are automatically set by the endpoint as well.
+Note that {**data_type**} is determined automatically and can either be **json** (when valid JSON is POST'ed) or **unknown** (otherwise). The fields {**ts_fmt**} (a human-readable timestamp) & {**rand_int**} (a random integer to avoid collisions) are automatically set by the endpoint as well.
 
 Note that the **event_category** parameter is particularly **important**:
 
 - When set to **function** all data contained in the POST request will be **ingested into native BigQuery storage** using [the analytics Cloud Function (`function-gcs-to-bq-.*`)](https://console.cloud.google.com/functions/list) we created when we deployed [the analytics module with Terraform]((https://github.com/improbable/online-services/tree/master/services/terraform)).
-- When set to **anything else** all data contained in the POST request will **arrive in GCS**, but will **not by default be ingested into native BigQuery storage**. This data can however still be accessed by BigQuery by using GCS as an external data source.
+- When set to **anything else** all data contained in the POST request will **arrive in GCS**, but will **not by default be ingested into native BigQuery storage**. This data can however still be accessed with BigQuery by using GCS as an external data source.
 
-Note that **function** is a completely arbitrary string, but we have established [GCS notifications to trigger Pub/Sub notifications to the Pub/Sub Topic that feeds our analytics Cloud Function](../../services/terraform/module-analytics/pubsub.tf) whenever files are created on this particular GCS prefix. In this case these notifications invoke our analytics Cloud Function which ingests these files into native BigQuery storage. Over-time we can imagine developers extending this setup in new ways: perhaps crashdumps are written into **crashdump** (either via **v1/event** or **v1/file**) which will trigger a different Cloud Function with the appropriate logic to parse it and write relevant information into BigQuery, or **fps** will be used for high volume frames-per-second events that are subsequently aggregated with a Dataflow (Stream / Batch) script _before_ being written into BigQuery.
+Note that **function** is a completely arbitrary string, but we have established [GCS notifications to trigger Pub/Sub notifications to the Pub/Sub Topic that feeds our analytics Cloud Function](../../services/terraform/module-analytics/pubsub.tf) whenever files are created on this particular GCS prefix. In this case these notifications invoke our analytics Cloud Function which ingests these files into native BigQuery storage.
+
+Over-time we can imagine developers extending this setup in new ways: perhaps crashdumps are written into **crashdump** (either via `v1/event` or `v1/file`) which will trigger a different Cloud Function with the appropriate logic to parse it and write relevant information into BigQuery, or **frames_per_second** will be used for high volume frames-per-second events that are subsequently aggregated with a Dataflow (Stream / Batch) script _before_ being written into BigQuery.
 
 #### (2.1.2) - The JSON Event Schema
 
@@ -219,8 +221,8 @@ Each analytics event, which is a JSON dictionary, should adhere to the following
 | Key                | Type    | Description |
 |--------------------|---------|-------------|
 | `eventEnvironment` | string  | One of  {**testing**, **development**, **staging**, **production**, **live**}. |
-| `eventIndex`       | integer | Increments with one with each event per sessionId, allows us to spot missing data. |
-| `eventSource`      | string  | Source of the event, ~ worker type (e.g. client/server). |
+| `eventIndex`       | integer | Increments with one with each event per sessionId, allows spotting missing data. |
+| `eventSource`      | string  | Source of the event (e.g. client/server ~ worker type). |
 | `eventClass`       | string  | A higher order mnemonic classification of events (e.g. session). |
 | `eventType`        | string  | A mnemonic event identifier (e.g. session_start). |
 | `sessionId`        | string  | The session_id, which is unique per worker (e.g. client/server) session. |
@@ -238,9 +240,10 @@ Finally, note that player_id is not a root field of our events, because it will 
 
 Your logic should include:
 
-- Augmenting events automatically with all required root fields of an event, only requiring custom event attributes to be passed in (which all go into **eventAttributes**).
+- Augmenting events automatically with all required root fields of an event, only requiring custom event attributes to be passed in (which all go into `eventAttributes`).
 - Batching events up before emitting them (every X seconds or Y events [~payload size], whichever comes first).
-- Making a simple POST request to a configurable endpoint (e.g. which host, URL parameters & headers).
+- Making a POST request to a configurable endpoint (e.g. which host, URL parameters & headers).
+    + Ideally, the logic can handle batching + custom URL parameters per `eventClass`/`eventType`, so for instance all `frames_per_second` events will be POST'ed in batches to `..&event_category=frames_per_second..`, staging them for aggregation before being ingested into BigQuery, whereas less frequent events can go to `..&event_category=function..`, etc.
 - Allowing the configuration of retries & have fallback mechanisms (e.g. first try production endpoint, then staging endpoint, then testing endpoint).
 - Capping the bandwidth provided to emitting events, as to never degrade game performance too much.
 - In case hook is client-side: local caching of events in case connection is offline.
