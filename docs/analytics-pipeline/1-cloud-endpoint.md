@@ -148,7 +148,7 @@ kubectl config use-context {K8S_CONTEXT_NAME}
 We now first need to make a few edits to our Kubernetes YAML files:
 
 - Update the [deployment.yaml](../../services/k8s/analytics-endpoint/deployment.yaml) file with your {**GCLOUD_PROJECT_ID**}.
-- Update the [service.yaml](../../services/k8s/analytics-endpoint/service.yaml) file with your {**ANALYTICS_HOST_IP**}. You can check out what this value is by navigating into [terraform/](https://github.com/improbable/online-services/tree/master/services/terraform) & running `terraform output` (look for **analytics_host**).
+- Update the [service.yaml](../../services/k8s/analytics-endpoint/service.yaml) file with your {**ANALYTICS_HOST_IP**}. You can check out what this value is by navigating into [terraform/](../../services/terraform) & running `terraform output` (look for **analytics_host**).
 
 **Afterwards** deploy the deployment & service to GKE:
 
@@ -210,7 +210,7 @@ Note that the **event_category** parameter is particularly **important**:
 - When set to **function** all data contained in the POST request will be **ingested into native BigQuery storage** using [the analytics Cloud Function (`function-gcs-to-bq-.*`)](https://console.cloud.google.com/functions/list) we created when we deployed [the analytics module with Terraform]((https://github.com/improbable/online-services/tree/master/services/terraform)).
 - When set to **anything else** all data contained in the POST request will **arrive in GCS**, but will **not by default be ingested into native BigQuery storage**. This data can however still be accessed by BigQuery by using GCS as an external data source.
 
-Note that **function** is a completely arbitrary string, but we have established [GCS notifications to trigger Pub/Sub notifications to the Pub/Sub Topic that feeds our analytics Cloud Function](https://github.com/improbable/online-services/tree/master/services/terraform/module-analytics/pubsub.tf) whenever files are created on this particular GCS prefix. In this case these notifications invoke our analytics Cloud Function which ingests these files into native BigQuery storage. Over-time we can imagine developers extending this setup in new ways: perhaps crashdumps are written into **crashdump** (either via **v1/event** or **v1/file**) which will trigger a different Cloud Function with the appropriate logic to parse it and write relevant information into BigQuery, or **fps** will be used for high volume frames-per-second events that are subsequently aggregated with a Dataflow (Stream / Batch) script _before_ being written into BigQuery.
+Note that **function** is a completely arbitrary string, but we have established [GCS notifications to trigger Pub/Sub notifications to the Pub/Sub Topic that feeds our analytics Cloud Function](../../services/terraform/module-analytics/pubsub.tf) whenever files are created on this particular GCS prefix. In this case these notifications invoke our analytics Cloud Function which ingests these files into native BigQuery storage. Over-time we can imagine developers extending this setup in new ways: perhaps crashdumps are written into **crashdump** (either via **v1/event** or **v1/file**) which will trigger a different Cloud Function with the appropriate logic to parse it and write relevant information into BigQuery, or **fps** will be used for high volume frames-per-second events that are subsequently aggregated with a Dataflow (Stream / Batch) script _before_ being written into BigQuery.
 
 #### (2.1.2) - The JSON Event Schema
 
@@ -311,4 +311,4 @@ kubectl delete service {K8S_SERVICE_NAME}
 
 ---
 
-Next up: [(2) - Using GCS as an external data source through BigQuery](https://github.com/improbable/online-services/blob/master/docs/analytics-pipeline/2-bigquery-gcs-external.md)
+Next up: [(2) - Using GCS as an external data source through BigQuery](./2-bigquery-gcs-external.md)

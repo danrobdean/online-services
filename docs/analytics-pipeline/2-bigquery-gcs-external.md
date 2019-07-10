@@ -69,4 +69,4 @@ bq --location=EU query \
 
 ---
 
-Next up: [(3) - Deploying a Cloud Function that forwards events from GCS into native BigQuery storage (as opposed to using GCS as an external data source)](https://github.com/improbable/online-services/blob/analytics/docs/analytics-pipeline/3-bigquery-cloud-function.md)
+Next up: [(3) - Deploying a Cloud Function that forwards events from GCS into native BigQuery storage (as opposed to using GCS as an external data source)](./3-bigquery-cloud-function.md)

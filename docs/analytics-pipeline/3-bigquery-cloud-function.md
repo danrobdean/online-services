@@ -9,7 +9,7 @@ In order to facilitate this, we provide two things:
 
 ## (1) - Utilizing the Cloud Function
 
-When deploying [the analytics Terraform module](https://github.com/improbable/online-services/tree/master/services/terraform), you automatically also deployed the [analytics Cloud Function (`function-gcs-to-bq-.*`)](https://console.cloud.google.com/functions/list). Whenever events are sent to our endpoint where the URL parameter **event_category** was set to **function**, a Pub/Sub notification is triggered that invokes our analytics Cloud Function to pick up this file & ingest it into native BigQuery storage. Only when a Cloud Function is invoked, do you accrue any costs.
+When deploying [the analytics Terraform module](../../services/terraform/module-analytics), you automatically also deployed the [analytics Cloud Function (`function-gcs-to-bq-.*`)](https://console.cloud.google.com/functions/list). Whenever events are sent to our endpoint where the URL parameter **event_category** was set to **function**, a Pub/Sub notification is triggered that invokes our analytics Cloud Function to pick up this file & ingest it into native BigQuery storage. Only when a Cloud Function is invoked, do you accrue any costs.
 
 The function:
 
@@ -104,4 +104,4 @@ If you pointed the backfill script to files in GCS that were **not already inges
 
 ---
 
-Next up: [(4) - Scale testing your analytics pipeline](https://github.com/improbable/online-services/blob/master/docs/analytics-pipeline/4-scale-test.md)
+Next up: [(4) - Scale testing your analytics pipeline](./4-scale-test.md)
