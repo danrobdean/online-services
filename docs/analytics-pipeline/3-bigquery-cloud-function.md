@@ -9,7 +9,7 @@ In order to facilitate this, we provide two things:
 
 ## (1) - Utilizing the Cloud Function
 
-When deploying [the analytics Terraform module](https://github.com/improbable/online-services/tree/master/services/terraform), you automatically also deployed the [analytics Cloud Function](https://console.cloud.google.com/functions/list) (look for a function called **function-gcs-to-bq-..**). Whenever events are sent to our endpoint where the URL parameter **event_category** was set to **function**, a notification is triggered that invokes our function to pick up this file & ingest it into native BigQuery storage. Only when a Cloud Function is invoked, do you accrue any costs.
+When deploying [the analytics Terraform module](https://github.com/improbable/online-services/tree/master/services/terraform), you automatically also deployed the [analytics Cloud Function (`function-gcs-to-bq-.*`)](https://console.cloud.google.com/functions/list). Whenever events are sent to our endpoint where the URL parameter **event_category** was set to **function**, a Pub/Sub notification is triggered that invokes our analytics Cloud Function to pick up this file & ingest it into native BigQuery storage. Only when a Cloud Function is invoked, do you accrue any costs.
 
 The function:
 

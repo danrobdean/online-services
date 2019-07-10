@@ -2,7 +2,7 @@
 
 # Store the .zip file in GCS.
 resource "google_storage_bucket_object" "function_analytics" {
-  name   = "analytics/function-gcs-to-bq.zip"
+  name   = "analytics/function-gcs-to-bq-${random_pet.cloud_function_pet.id}.zip"
   bucket = "${google_storage_bucket.functions_bucket.name}"
   source = "${path.module}/../../python/analytics-pipeline/cloud-function-analytics.zip"
 }
@@ -12,7 +12,7 @@ resource "google_storage_bucket_object" "function_analytics" {
 resource "random_pet" "cloud_function_pet" {
   length = 1
   keepers = {
-    file_hash = "${google_storage_bucket_object.function_analytics.md5hash}"
+    file_hash = "${data.archive_file.cloud_function_analytics.output_md5}"
   }
 }
 

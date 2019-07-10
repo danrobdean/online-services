@@ -6,6 +6,7 @@ import hashlib
 import base64
 import json
 import time
+import os
 
 from common.parser import jsonParser, parseField, pathParser, unixTimestampCheck
 from common.bigquery import provisionBigQuery
@@ -80,7 +81,7 @@ def cf0GcsToBq(data, context):
 				d['received_timestamp'] = unixTimestampCheck(parseField(_dict = event, option1 = ['receivedTimestamp'], option2 = ['received_timestamp']))
 				# Augment
 				d['inserted_timestamp'] = time.time()
-				d['job_name'] = job_name
+				d['job_name'] = os.environ['FUNCTION_NAME']
 				# Sanitize
 				d['event_attributes'] = parseField(_dict = event, option1 = ['eventAttributes'], option2 = ['event_attributes'])
 				batch_function.append(d)
