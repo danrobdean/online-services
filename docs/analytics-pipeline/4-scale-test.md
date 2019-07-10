@@ -7,26 +7,26 @@ In this section we will scale test our analytics pipeline.
 
 ## (1) - Write Events to Endpoint
 
-First let's create a virtual Python environment & install dependencies.
+First let's create a new virtual Python environment & install dependencies.
 
 ```bash
 # Step out of your current Python 3 virtual environment, if you are in one:
 deactivate
 
-# Create a new Python 3 virtual environment
+# Create a new Python 3 virtual environment:
 python3 -m venv venv-scale-test
 
-# Activate virtual environment
+# Activate virtual environment:
 source venv-scale-test/bin/activate
 
-# Upgrade Python's package manager pip
+# Upgrade Python's package manager pip:
 pip install --upgrade pip
 
-# Install dependencies with pip
+# Install dependencies with pip:
 pip install -r ../../services/python/analytics-pipeline/src/requirements/scale-test.txt
 ```
 
-Second, we will write 10k batch files into GSC:
+Second, we will use our scale test script to write 10k batch files into GSC:
 
 ```bash
 python ../../services/python/analytics-pipeline/src/endpoint/scale-test.py \
