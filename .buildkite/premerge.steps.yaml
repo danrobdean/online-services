@@ -16,14 +16,14 @@ common: &common
 # These are then relied on to have stable names by other things, so once named, please beware renaming has consequences.
 
 steps:
-  # - label: "build :bash:"
-  #   command: "ci/build.sh"
-  #   <<: *common # This folds the YAML named anchor into this step. Overrides, if any, should follow, not precede.
-  #   timeout_in_minutes: 15
-  # - label: "dotnet format"
-  #   command: "ci/format.sh"
-  #   <<: *common # This folds the YAML named anchor into this step. Overrides, if any, should follow, not precede.
-  #   timeout_in_minutes: 15
+  - label: "build :bash:"
+    command: "ci/build.sh"
+    <<: *common # This folds the YAML named anchor into this step. Overrides, if any, should follow, not precede.
+    timeout_in_minutes: 15
+  - label: "dotnet format"
+    command: "ci/format.sh"
+    <<: *common # This folds the YAML named anchor into this step. Overrides, if any, should follow, not precede.
+    timeout_in_minutes: 15
   - label: "analytics-pipeline :100:"
     command: "ci/analytics-pipeline.sh"
     <<: *common # This folds the YAML named anchor into this step. Overrides, if any, should follow, not precede.
