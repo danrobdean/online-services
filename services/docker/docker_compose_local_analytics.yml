@@ -1,0 +1,29 @@
+version: '3.1'
+
+services:
+
+  analytics-esp:
+    image: "gcr.io/endpoints-release/endpoints-runtime:1.16.0"
+    ports:
+      - "4040:4040"
+      - "8080:8080"
+    volumes:
+      - "${LOCAL_SA_KEY_JSON_ESP}:/esp/esp.json"
+    command:
+      - "--http_port=8080"
+      - "--backend=analytics:8080"
+      - "--service=analytics.endpoints.${GOOGLE_PROJECT_ID}.cloud.goog"
+      - "--rollout_strategy=managed"
+      - "--service_account_key=/esp/esp.json"
+
+  analytics:
+    volumes:
+      - "${LOCAL_SA_KEY_JSON}:/secrets/json/analytics-gcs-writer.json"
+      - "${LOCAL_SA_KEY_P12}:/secrets/p12/analytics-gcs-writer.p12"
+    image: "gcr.io/${GOOGLE_PROJECT_ID}/analytics-endpoint:latest"
+    environment:
+      SECRET_JSON: "/secrets/json/analytics-gcs-writer.json"
+      SECRET_P12: "/secrets/p12/analytics-gcs-writer.p12"
+      BUCKET_NAME: "${GOOGLE_PROJECT_ID}-analytics"
+      GCP: "${GOOGLE_PROJECT_ID}"
+      EMAIL: "analytics-gcs-writer@${GOOGLE_PROJECT_ID}.iam.gserviceaccount.com"
