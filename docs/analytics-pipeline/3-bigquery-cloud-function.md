@@ -74,10 +74,10 @@ pip install -r ../../services/python/analytics-pipeline/src/requirements/dataflo
 Now let's boot our backfill batch script:
 
 ```bash
-# Set environment variable for credentials
+# Set environment variable for credentials:
 export GOOGLE_APPLICATION_CREDENTIALS=[local JSON key path for Dataflow]
 
-# Trigger script!
+# Trigger script:
 python ../../services/python/analytics-pipeline/src/dataflow/p1-gcs-to-bq-backfill.py  \
   --setup-file=../../services/python/analytics-pipeline/src/dataflow/setup.py \ # Required
   --execution-environment=DataflowRunner \ # Required
@@ -85,7 +85,7 @@ python ../../services/python/analytics-pipeline/src/dataflow/p1-gcs-to-bq-backfi
   --gcs-bucket=[your project id]-analytics \ # Required
   --topic=cloud-function-gcs-to-bq-topic \ # Required
   --gcp=[your project id] \ # Required
-  --analytics-environment=testing \ # Optional, if omitted will pick up all environments: {testing, development, staging, development, production, live}
+  --analytics-environment=testing \ # Optional, if omitted will pick up the following environments: {testing, development, staging, development, production, live}
   --event-category=cold \ # Required
   --event-ds-start=2019-01-01 \ # Optional, if omitted will default to: 2019-01-01
   --event-ds-stop=2020-12-31 \ # Optional, if omitted will default to: 2020-12-31
