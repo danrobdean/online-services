@@ -20,7 +20,7 @@ services:
     volumes:
       - "${SECRET_JSON}:/secrets/json/analytics-gcs-writer.json"
       - "${SECRET_P12}:/secrets/p12/analytics-gcs-writer.p12"
-    image: "gcr.io/${GCP}/analytics-endpoint:latest"
+    image: "gcr.io/${GCP}/${IMAGE}:latest"
     environment:
       SECRET_JSON: "/secrets/json/analytics-gcs-writer.json"
       SECRET_P12: "/secrets/p12/analytics-gcs-writer.p12"

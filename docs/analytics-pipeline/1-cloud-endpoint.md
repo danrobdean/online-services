@@ -48,7 +48,7 @@ In a different terminal window, submit the following 2 `curl` POST requests in o
 # Verify v1/event method is working:
 curl --request POST \
   --header "content-type:application/json" \
-  --data "{\"eventSource\":\"client\",\"eventClass\":\"test\",\"eventType\":\"endpoint_local\",\"eventTimestamp\":1562599755,\"eventIndex\":6,\"sessionId\":\"f58179a375290599dde17f7c6d546d78\",\"buildVersion\":\"2.0.13\",\"eventEnvironment\":\"testing\",\"eventAttributes\":{\"playerId\": 12345678}}" \
+  --data "{\"eventSource\":\"client\",\"eventClass\":\"test\",\"eventType\":\"endpoint_main.py\",\"eventTimestamp\":1562599755,\"eventIndex\":6,\"sessionId\":\"f58179a375290599dde17f7c6d546d78\",\"buildVersion\":\"2.0.13\",\"eventEnvironment\":\"testing\",\"eventAttributes\":{\"playerId\": 12345678}}" \
   "http://0.0.0.0:8080/v1/event?&analytics_environment=testing&event_category=cold&session_id=f58179a375290599dde17f7c6d546d78"
 
 # Verify v1/file method is working:
@@ -111,7 +111,7 @@ As before, in a different terminal window, submit the follow 2 curl POST request
 # Verify v1/event method is working:
 curl --request POST \
   --header "content-type:application/json" \
-  --data "{\"eventSource\":\"client\",\"eventClass\":\"test\",\"eventType\":\"endpoint_local_containerized\",\"eventTimestamp\":1562599755,\"eventIndex\":6,\"sessionId\":\"f58179a375290599dde17f7c6d546d78\",\"buildVersion\":\"2.0.13\",\"eventEnvironment\":\"testing\",\"eventAttributes\":{\"playerId\": 12345678}}" \
+  --data "{\"eventSource\":\"client\",\"eventClass\":\"test\",\"eventType\":\"endpoint_docker_run\",\"eventTimestamp\":1562599755,\"eventIndex\":6,\"sessionId\":\"f58179a375290599dde17f7c6d546d78\",\"buildVersion\":\"2.0.13\",\"eventEnvironment\":\"testing\",\"eventAttributes\":{\"playerId\": 12345678}}" \
   "http://0.0.0.0:8080/v1/event?&analytics_environment=testing&event_category=cold&session_id=f58179a375290599dde17f7c6d546d78"
 
 # Verify v1/file method is working:
@@ -144,6 +144,7 @@ export GCP=logical-flame-194710
 export SECRET_JSON=[local JSON key path writer]
 export SECRET_P12=[local p12 key path writer]
 export SECRET_JSON_ESP=[local JSON key path endpoint]
+export IMAGE=analytics-endpoint
 
 # Start a local pod containing both containers:
 docker-compose -f ../../services/docker/docker_compose_local_analytics.yml up
@@ -151,7 +152,7 @@ docker-compose -f ../../services/docker/docker_compose_local_analytics.yml up
 # Verify v1/event method is working:
 curl --request POST \
   --header "content-type:application/json" \
-  --data "{\"eventSource\":\"client\",\"eventClass\":\"test\",\"eventType\":\"endpoint_k8s_containerized\",\"eventTimestamp\":1562599755,\"eventIndex\":6,\"sessionId\":\"f58179a375290599dde17f7c6d546d78\",\"buildVersion\":\"2.0.13\",\"eventEnvironment\":\"testing\",\"eventAttributes\":{\"playerId\": 12345678}}" \
+  --data "{\"eventSource\":\"client\",\"eventClass\":\"test\",\"eventType\":\"endpoint_docker_compose\",\"eventTimestamp\":1562599755,\"eventIndex\":6,\"sessionId\":\"f58179a375290599dde17f7c6d546d78\",\"buildVersion\":\"2.0.13\",\"eventEnvironment\":\"testing\",\"eventAttributes\":{\"playerId\": 12345678}}" \
   "http://0.0.0.0:8080/v1/event?key=[your gcp api key]&analytics_environment=testing&event_category=cold&session_id=f58179a375290599dde17f7c6d546d78"
 
 # Verify v1/file method is working:
@@ -212,7 +213,7 @@ kubectl apply -f ../../services/k8s/analytics-endpoint
 # Verify v1/event method is working:
 curl --request POST \
   --header "content-type:application/json" \
-  --data "{\"eventSource\":\"client\",\"eventClass\":\"test\",\"eventType\":\"endpoint_k8s_containerized\",\"eventTimestamp\":1562599755,\"eventIndex\":6,\"sessionId\":\"f58179a375290599dde17f7c6d546d78\",\"buildVersion\":\"2.0.13\",\"eventEnvironment\":\"testing\",\"eventAttributes\":{\"playerId\": 12345678}}" \
+  --data "{\"eventSource\":\"client\",\"eventClass\":\"test\",\"eventType\":\"endpoint_k8s\",\"eventTimestamp\":1562599755,\"eventIndex\":6,\"sessionId\":\"f58179a375290599dde17f7c6d546d78\",\"buildVersion\":\"2.0.13\",\"eventEnvironment\":\"testing\",\"eventAttributes\":{\"playerId\": 12345678}}" \
   "http://analytics.endpoints.[your project id].cloud.goog:80/v1/event?key=[your gcp api key]&analytics_environment=testing&event_category=cold&session_id=f58179a375290599dde17f7c6d546d78"
 
 # Verify v1/file method is working:
@@ -319,7 +320,7 @@ curl --request POST \
 curl \
   -H 'Content-Type: text/plain' \
   -H 'Content-MD5: XKvMhvwrORVuxdX54FQEdg==' \
-  -X PUT "https://storage.googleapis.com/gcp-analytics-pipeline-events/data_type=file/analytics_environment=testing/event_category=crashdump-worker/event_ds=2019-06-18/event_time=8-16/parent/child-451684?GoogleAccessId=event-gcs-writer%40[your project id].iam.gserviceaccount.com&Expires=1560859391&Signature=tO0bvOzgbF%2F%2FYt%2F%2BHr5L9oH1Y9yQIYMBFIuFyb36L3UhSzalq3%2FRYmto2lguceSoHEtknZQaeI1zDqRwEqfGkPTDGMY9bE1wNR9aT%2F8aAitC0czl6cOPVyJ%2FE1%2B7riEBHXcJyQQSsDMUeJWWT50OKWX4yM961kfJK7c7mv0bvwJPint7Eo5iPTyR9ax57gb4bgSgtFV5MM5c%2FvCIH7%2BuUAiXSbW9CWsA56UJRNf%2BB0YplRtB12VlxWyQlZKpHFrU5EoLQ3vO3YXsQidkjm1it%2BCl1uQptvX%2BZCI7eleEiZANpVX46%2B0MFSXi%2FidMHQSVEF96iGTaFvwzpoiT%2Bj%2F42g%3D%3D" \
+  -X PUT "https://storage.googleapis.com/gcp-analytics-pipeline-events/data_type=file/analytics_environment=testing/event_category=crashdump-worker/event_ds=2019-06-18/event_time=8-16/parent/child-451684?GoogleAccessId=analytics-gcs-writer%40[your project id].iam.gserviceaccount.com&Expires=1560859391&Signature=tO0bvOzgbF%2F%2FYt%2F%2BHr5L9oH1Y9yQIYMBFIuFyb36L3UhSzalq3%2FRYmto2lguceSoHEtknZQaeI1zDqRwEqfGkPTDGMY9bE1wNR9aT%2F8aAitC0czl6cOPVyJ%2FE1%2B7riEBHXcJyQQSsDMUeJWWT50OKWX4yM961kfJK7c7mv0bvwJPint7Eo5iPTyR9ax57gb4bgSgtFV5MM5c%2FvCIH7%2BuUAiXSbW9CWsA56UJRNf%2BB0YplRtB12VlxWyQlZKpHFrU5EoLQ3vO3YXsQidkjm1it%2BCl1uQptvX%2BZCI7eleEiZANpVX46%2B0MFSXi%2FidMHQSVEF96iGTaFvwzpoiT%2Bj%2F42g%3D%3D" \
   --data-binary '@worker-crashdump-test.gz'
 ```
 

@@ -46,4 +46,4 @@ class CloudStorageURLSigner(object):
         headers = {}
         headers['Content-Type'], headers['Content-MD5'] = content_type, md5_digest
         request = requests.Request('PUT', base_url, params = query_params).prepare()
-        return {'signed_url': request.url, 'headers': headers, 'md5_digest': md5_digest}
+        return {'signed_url': request.url, 'headers': headers, 'md5_digest': md5_digest, 'code': 200}
