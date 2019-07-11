@@ -10,7 +10,7 @@ export IMAGE=analytics-endpoint-bk
 export API_KEY=/tmp/ci-online-services/secrets/api-key.json
 
 # Build container:
-docker kill $(docker ps -q)
+# docker kill $(docker ps -q)
 docker build -f services/docker/analytics-endpoint/Dockerfile -t gcr.io/${GCP}/${IMAGE}:latest ./services
 
 # Refresh /tmp/ci-online-services:
@@ -28,6 +28,7 @@ cat /tmp/ci-online-services/secrets/analytics-gcs-writer-p12.json | jq -r .token
 # Start a local pod containing both containers:
 docker-compose -f services/docker/docker_compose_local_analytics.yml up --no-start
 docker-compose -f services/docker/docker_compose_local_analytics.yml start
+sleep 10
 
 # Parse API key:
 API_KEY_TOKEN=$(echo $(cat ${API_KEY}) | jq -r .token)
