@@ -37,7 +37,7 @@ spec:
           value: [your project id] # Update
         - name: EMAIL
           value: analytics-gcs-writer@[your project id].iam.gserviceaccount.com # Update
-        image: gcr.io/logical-flame-194710/analytics-endpoint
+        image: gcr.io/[your project id]/analytics-endpoint # Update
         imagePullPolicy: Always
         name: analytics-deployment-server
         ports:

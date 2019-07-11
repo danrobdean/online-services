@@ -65,7 +65,7 @@ If both requests returned proper JSON, without any error messages, the endpoint 
 Next we are going to create an image which contains everything required in order to run our Analytics Endpoint using [Docker](https://www.docker.com/). We will then:
 
 1. Verify the image by executing the image in a local container (a container is a running instance of an image).
-2. Once we have verified this is the case, we will run our container alongside a second public container provided by Google which handles everything related to [Cloud Endpoints](https://cloud.google.com/endpoints/) in a local pod (a group of containers running together), mimicking the situation it will be in once deployed on [Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine/) (GKE - Google's fully managed Kubernetes solution).
+2. Once we have verified this is the case, we will run our container alongside a second public container provided by Google which handles everything related to [Cloud Endpoints](https://cloud.google.com/endpoints/) in a local pod (a pod is a group of containers running together), mimicking the situation it will be in once deployed on [Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine/) (GKE - Google's fully managed Kubernetes solution).
 3. After we have verified our local pod is running as expected as well, we will push the image to a remote location, in this case [Google Container Registry (GCR)](https://cloud.google.com/container-registry/), which stages the image to be deployed as containers on your Kubernetes cluster.
 
 #### (1.2.1) - Verifying the Analytics Endpoint Image
@@ -129,21 +129,21 @@ If both requests returned proper JSON again without any errors, we have verified
 
 #### (1.2.2) - Verifying the Analytics Endpoint with ESP
 
-When deploying the Analytics Endpoint on GKE, we will do this by deploying a pod that contains two containers:
+When deploying the Analytics Endpoint on GKE, we will do this by deploying (a) pod(s) that contains two containers:
 
 - Our Analytics Endpoint with custom server code.
 - A public ESP container provided by Google which runs everything related to [Cloud Endpoints](https://cloud.google.com/endpoints/).
 
-In order to mimic this situation locally, we will use docker-compose.
+In order to mimic this situation locally, we will use [docker-compose](https://docs.docker.com/compose/).
 
-First you need to [get an API key for your GCP](https://console.cloud.google.com/apis/credentials), which you need to pass via the **key** parameter in the url of your POST request: **[your gcp api key]**. This is something we configured the ESP container to require, before forwarding the request onto our Analytics Endpoint. Note that is is currently [not possible to provision this an API key programmatically](https://issuetracker.google.com/issues/76227920) & that **it takes some time before API keys become fully functional, to be safe wait at least 10 minutes** before attempting the below POST requests.
+First you need to [get an API key for your GCP](https://console.cloud.google.com/apis/credentials), which you need to pass via the **key** parameter in the url of your POST request: **[your gcp api key]**. This is something we configured the ESP container to require (basic auth), before forwarding the request onto our Analytics Endpoint. Note that it's currently [not possible to provision an API key programmatically](https://issuetracker.google.com/issues/76227920) & that **it takes some time before API keys become fully functional, to be safe wait at least 10 minutes** before attempting the below POST requests.
 
 ```bash
 # First set a few environment variables:
-export LOCAL_SA_KEY_JSON=[local JSON key path writer]
-export LOCAL_SA_KEY_P12=[local p12 key path writer]
-export LOCAL_SA_KEY_JSON_ESP=[local JSON key path endpoint]
-export GOOGLE_PROJECT_ID=logical-flame-194710
+export GCP=logical-flame-194710
+export SECRET_JSON=[local JSON key path writer]
+export SECRET_P12=[local p12 key path writer]
+export SECRET_JSON_ESP=[local JSON key path endpoint]
 
 # Start a local pod containing both containers:
 docker-compose -f ../../services/docker/docker_compose_local_analytics.yml up
