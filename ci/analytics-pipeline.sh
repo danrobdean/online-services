@@ -13,8 +13,8 @@ export API_KEY=/secrets/api-key.json
 docker build -f services/docker/analytics-endpoint/Dockerfile -t gcr.io/${GCP}/${IMAGE}:latest ./services
 
 # Grab secrets from Vault:
-imp-ci secrets read --environment=production --buildkite-org=improbable --secret-type=gce-key-pair --secret-name=${GCP}/event-gcs-writer-json --write-to=/secrets/analytics-gcs-writer.json
-imp-ci secrets read --environment=production --buildkite-org=improbable --secret-type=generic-token --secret-name=${GCP}/event-gcs-writer-p12 --write-to=/secrets/analytics-gcs-writer-p12.json
+imp-ci secrets read --environment=production --buildkite-org=improbable --secret-type=gce-key-pair --secret-name=${GCP}/analytics-gcs-writer-json --write-to=/secrets/analytics-gcs-writer.json
+imp-ci secrets read --environment=production --buildkite-org=improbable --secret-type=generic-token --secret-name=${GCP}/analytics-gcs-writer-p12 --write-to=/secrets/analytics-gcs-writer-p12.json
 imp-ci secrets read --environment=production --buildkite-org=improbable --secret-type=gce-key-pair --secret-name=${GCP}/analytics-endpoint-json --write-to=/secrets/analytics-endpoint.json
 imp-ci secrets read --environment=production --buildkite-org=improbable --secret-type=generic-token --secret-name=${GCP}/api-key --write-to=/secrets/api-key.json
 
