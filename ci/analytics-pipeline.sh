@@ -10,7 +10,6 @@ export IMAGE=analytics-endpoint-bk
 export API_KEY=/tmp/ci-online-services/secrets/api-key.json
 
 # Build container:
-# docker kill $(docker ps -q)
 docker build -f services/docker/analytics-endpoint/Dockerfile -t gcr.io/${GCP}/${IMAGE}:latest ./services
 
 # Refresh /tmp/ci-online-services:
@@ -51,7 +50,6 @@ finish() {
   # Stops and removes all containers.
   docker-compose -f services/docker/docker_compose_local_analytics.yml down
   docker-compose -f services/docker/docker_compose_local_analytics.yml rm --force
-  # rm -rf /tmp/ci-online-services || exit 0
-  docker kill $(docker ps -q)
+  rm -rf /tmp/ci-online-services || exit 0
 }
 trap finish EXIT
