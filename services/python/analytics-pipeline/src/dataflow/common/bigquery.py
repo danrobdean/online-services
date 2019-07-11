@@ -1,5 +1,5 @@
 
-def provisionBigQuery(client_bq, type, suffix_bq, partitioned = False):
+def provisionBigQuery(client_bq, type, partitioned = False):
     from google.cloud.exceptions import NotFound
     from google.cloud import bigquery
 
@@ -23,7 +23,7 @@ def provisionBigQuery(client_bq, type, suffix_bq, partitioned = False):
         partition = ''
 
     # Create dataset if not exists..
-    for i in [i + suffix_bq for i in ['logs', 'events']]:
+    for i in [i for i in ['logs', 'events']]:
         dataset_ref = client_bq.dataset(i)
         if not dataset_exists(client = client_bq, dataset_reference = dataset_ref):
             dataset = bigquery.Dataset(dataset_ref)
@@ -48,7 +48,7 @@ def provisionBigQuery(client_bq, type, suffix_bq, partitioned = False):
      ]
 
     # Create events_{type} if not exists.
-    table_ref_events = client_bq.dataset('events' + suffix_bq).table('events_' + type + suffix_bq)
+    table_ref_events = client_bq.dataset('events').table('events_' + type)
     if not table_exists(client = client_bq, table_reference = table_ref_events):
         table = bigquery.Table(table_ref_events, schema = schema_events)
         if partitioned == True:
@@ -71,13 +71,13 @@ def provisionBigQuery(client_bq, type, suffix_bq, partitioned = False):
 
     if type in ['batch', 'stream', 'function']:
 
-        tables = ['events_logs_{type}{suffix_bq}'.format(type = type, suffix_bq = suffix_bq),
-                  'events_logs_{type}_backfill{suffix_bq}'.format(type = type, suffix_bq = suffix_bq),
-                  'events_debug_{type}{suffix_bq}'.format(type = type, suffix_bq = suffix_bq)]
+        tables = ['events_logs_{type}'.format(type = type),
+                  'events_logs_{type}_backfill'.format(type = type),
+                  'events_debug_{type}'.format(type = type)]
 
         # Create tables if they do not exist..
         for i in tables:
-            table_ref_logs = client_bq.dataset('logs' + suffix_bq).table(i)
+            table_ref_logs = client_bq.dataset('logs').table(i)
             if not table_exists(client = client_bq, table_reference = table_ref_logs):
                 table = bigquery.Table(table_ref_logs, schema = schema_logs)
                 if partitioned == True:
@@ -91,7 +91,7 @@ def provisionBigQuery(client_bq, type, suffix_bq, partitioned = False):
         print('Error - Type unknown {stream, batch, function}!')
         return False
 
-def queryGenerator(gcp, suffix_bq, table_type, ds_start, ds_stop, time_part_list, env_list, event_category, scale_test_name = ''):
+def queryGenerator(gcp, table_type, ds_start, ds_stop, time_part_list, env_list, event_category, scale_test_name = ''):
 
     time_part_tuple = str(time_part_list).replace('[','(').replace(']',')')
     env_tuple = str(env_list).replace('[','(').replace(']',')')
@@ -109,7 +109,7 @@ def queryGenerator(gcp, suffix_bq, table_type, ds_start, ds_stop, time_part_list
         SELECT DISTINCT
           file_path,
           batch_id
-        FROM `{gcp}.logs{suffix_bq}.events_logs_{table_type}*`
+        FROM `{gcp}.logs.events_logs_{table_type}*`
         WHERE event = 'parse_initiated'
         AND event_ds BETWEEN '{ds_start}' AND '{ds_stop}'
         AND event_time IN {time_part_list}
@@ -120,12 +120,12 @@ def queryGenerator(gcp, suffix_bq, table_type, ds_start, ds_stop, time_part_list
     INNER JOIN
         (
         SELECT batch_id
-        FROM `{gcp}.events{suffix_bq}.events_{table_type}*`
+        FROM `{gcp}.events.events_{table_type}*`
         WHERE analytics_environment IN {env_list}
         {scale_test_events}
         UNION DISTINCT
         SELECT batch_id
-        FROM `{gcp}.logs{suffix_bq}.events_debug_{table_type}*`
+        FROM `{gcp}.logs.events_debug_{table_type}*`
         WHERE event_ds BETWEEN '{ds_start}' AND '{ds_stop}'
         AND event_time IN {time_part_list}
         AND analytics_environment IN {env_list}
@@ -134,7 +134,7 @@ def queryGenerator(gcp, suffix_bq, table_type, ds_start, ds_stop, time_part_list
         ) b
     ON a.batch_id = b.batch_id
     ;
-    """.format(gcp = gcp, suffix_bq = suffix_bq, table_type = table_type, ds_start = ds_start, ds_stop = ds_stop, time_part_list = time_part_tuple,
+    """.format(gcp = gcp, table_type = table_type, ds_start = ds_start, ds_stop = ds_stop, time_part_list = time_part_tuple,
                env_list = env_tuple, event_category = event_category, scale_test_logs = scale_test_logs, scale_test_events = scale_test_events)
 
     return query

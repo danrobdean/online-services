@@ -11,9 +11,8 @@ import os
 from common.parser import jsonParser, parseField, pathParser, unixTimestampCheck
 from common.bigquery import provisionBigQuery
 
+# Function acts as function-gcs-to-bq@[your project id].iam.gserviceaccount.com
 client_gcs, client_bq = storage.Client(), bigquery.Client()
-
-suffix, suffix_bq = '', ''
 
 def elementCast(element):
 	if isinstance(element, dict):
@@ -27,45 +26,45 @@ def eventFormatter(list, job_name, gspath):
 	'event_time': pathParser(gspath, 'event_time='), 'event': elementCast(i), 'file_path': gspath} for i in list]
 	return new_list
 
-def sourceBigQuery(suffix_bq):
-	dataset_logs_ref, dataset_events_ref = client_bq.dataset('logs' + suffix_bq), client_bq.dataset('events' + suffix_bq)
-	table_logs_ref, table_debug_ref, table_function_ref = dataset_logs_ref.table('events_logs_function' + suffix_bq), dataset_logs_ref.table('events_debug_function' + suffix_bq), dataset_events_ref.table('events_function' + suffix_bq)
+def sourceBigQuery():
+	dataset_logs_ref, dataset_events_ref = client_bq.dataset('logs'), client_bq.dataset('events')
+	table_logs_ref, table_debug_ref, table_function_ref = dataset_logs_ref.table('events_logs_function'), dataset_logs_ref.table('events_debug_function'), dataset_events_ref.table('events_function')
 	return client_bq.get_table(table_logs_ref), client_bq.get_table(table_debug_ref), client_bq.get_table(table_function_ref)
 
 def cf0GcsToBq(data, context):
-	job_name = 'cloud-function' + suffix
+	job_name = 'cloud-function'
 
-	# Source required datasets & tables..
+	# Source required datasets & tables:
 	try:
-		table_logs, table_debug, table_function = sourceBigQuery(suffix_bq)
+		table_logs, table_debug, table_function = sourceBigQuery()
 	except:
-		_ = provisionBigQuery(client_bq, 'function', suffix_bq, True)
-		table_logs, table_debug, table_function = sourceBigQuery(suffix_bq)
+		_ = provisionBigQuery(client_bq, 'function', True)
+		table_logs, table_debug, table_function = sourceBigQuery()
 
-	# Parse payload
+	# Parse payload:
 	payload = json.loads(base64.b64decode(data['data']).decode('utf-8'))
 	bucket, name = payload['bucket'], payload['name']
 	gspath = 'gs://{bucket}/{name}'.format(bucket = bucket, name = name)
 
-	# Write log to events_logs_function
+	# Write log to events_logs_function:
 	errors = client_bq.insert_rows(table_logs, eventFormatter(['parse_initiated'], job_name, gspath))
 	if errors:
 		print('Errors while inserting logs: ' + str(errors))
 
-	# Get file from GCS
+	# Get file from GCS:
 	_bucket = client_gcs.get_bucket(bucket)
 	batch = jsonParser(_bucket.get_blob(name).download_as_string().decode('utf8'))
 
-	# If dict nest in list
+	# If dict nest in list:
 	if isinstance(batch, dict):
 		batch = [batch]
 
-	# Parse list
+	# Parse list:
 	if isinstance(batch, list):
 		batch_function, batch_debug = [], []
 		for event in batch:
 			d = {}
-			# Sanitize
+			# Sanitize:
 			d['event_class'] = parseField(_dict = event, option1 = ['eventClass'], option2 = ['event_class'])
 			if d['event_class'] is not None:
 				d['analytics_environment'] = parseField(_dict = event, option1 = ['analyticsEnvironment'], option2 = ['analytics_environment'])
@@ -79,29 +78,29 @@ def cf0GcsToBq(data, context):
 				d['event_environment'] = parseField(_dict = event, option1 = ['eventEnvironment'], option2 = ['event_environment'])
 				d['event_timestamp'] = unixTimestampCheck(parseField(_dict = event, option1 = ['eventTimestamp'], option2 = ['event_timestamp']))
 				d['received_timestamp'] = unixTimestampCheck(parseField(_dict = event, option1 = ['receivedTimestamp'], option2 = ['received_timestamp']))
-				# Augment
+				# Augment:
 				d['inserted_timestamp'] = time.time()
 				d['job_name'] = os.environ['FUNCTION_NAME']
-				# Sanitize
+				# Sanitize:
 				d['event_attributes'] = parseField(_dict = event, option1 = ['eventAttributes'], option2 = ['event_attributes'])
 				batch_function.append(d)
 			else:
 				batch_debug.append(event)
 
 		if len(batch_function) > 0:
-			# Write session JSON to events_function
+			# Write session JSON to events_function:
 			errors = client_bq.insert_rows(table_function, batch_function)
 			if errors:
 				print('Errors while inserting events: ' + str(errors))
 
 		if len(batch_debug) > 0:
-			# Write non-session JSON to events_debug_function
+			# Write non-session JSON to events_debug_function:
 			errors = client_bq.insert_rows(table_debug, eventFormatter(batch_debug, job_name, gspath))
 			if errors:
 				print('Errors while inserting events: ' + str(errors))
 
 	else:
-		# Write non-JSON to debugSink
+		# Write non-JSON to debugSink:
 		errors = client_bq.insert_rows(table_debug, eventFormatter([batch], job_name, gspath))
 		if errors:
 			print('Errors while inserting debug event: ' + str(errors))

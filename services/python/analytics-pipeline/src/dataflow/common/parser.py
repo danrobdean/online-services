@@ -13,18 +13,12 @@ def pathParser(path, key):
         value = None
     return value
 
-def typeParser(type, environment):
-    if type == 'buildkite':
-        suffix, suffix_bq = '-bk', '_bk'
-        list_env, name_env = [environment], environment
+def envParser(environment):
+    if environment in ['all', '']:
+        list_env, name_env = ['testing', 'development', 'staging', 'production', 'live'], 'all-envs'
     else:
-        suffix, suffix_bq = '', ''
-        if environment in ['all', '']:
-            environment = 'all'
-            list_env, name_env = ['development', 'testing', 'staging', 'production', 'live'], environment + '-envs'
-        else:
-            list_env, name_env = [environment], environment
-    return suffix, suffix_bq, list_env, name_env
+        list_env, name_env = [environment], environment
+    return list_env, name_env
 
 def timeParser(time_part):
     if time_part == 'all':

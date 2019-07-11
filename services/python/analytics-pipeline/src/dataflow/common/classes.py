@@ -15,7 +15,7 @@ class getGcsFileList(beam.DoFn):
 
 class WriteToPubSub(beam.DoFn):
 
-    def process(self, element, job_name, topic, suffix, gcp, gcs_bucket):
+    def process(self, element, job_name, topic, gcp, gcs_bucket):
         from apache_beam.io.gcp import gcsio
         from google.cloud import pubsub_v1
 
@@ -28,7 +28,7 @@ class WriteToPubSub(beam.DoFn):
         client_ps = pubsub_v1.PublisherClient(
           batch_settings = pubsub_v1.types.BatchSettings(max_messages = 1000, max_bytes = 5120)
           )
-        topic = client_ps.topic_path(gcp, topic + suffix)
+        topic = client_ps.topic_path(gcp, topic)
 
         for i in file_list:
             gcs_uri_list_read = gcs.open(filename = i, mode = 'r').read().decode('utf-8').split('\n')
