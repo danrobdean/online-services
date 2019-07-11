@@ -13,7 +13,7 @@ export API_KEY=/tmp/ci-online-services/secrets/api-key.json
 docker build -f services/docker/analytics-endpoint/Dockerfile -t gcr.io/${GCP}/${IMAGE}:latest ./services
 
 # Refresh /tmp/ci-online-services:
-rmdir /tmp/ci-online-services || true
+rm -rf /tmp/ci-online-services || true
 mkdir /tmp/ci-online-services
 
 # Grab secrets from Vault:
@@ -48,6 +48,6 @@ finish() {
   # Stops and removes all containers.
   docker-compose -f ../services/docker/docker_compose_local_analytics.yml down
   docker-compose -f ../services/docker/docker_compose_local_analytics.yml rm --force
-  rmdir /tmp/ci-online-services || exit 0
+  rm -rf /tmp/ci-online-services || exit 0
 }
 trap finish EXIT
