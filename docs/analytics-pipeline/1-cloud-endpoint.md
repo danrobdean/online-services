@@ -62,23 +62,23 @@ If both requests returned proper JSON, without any error messages, the endpoint 
 
 ### (1.2) - Containerizing the Analytics Endpoint
 
-Next we are going containerize our analytics endpoint using [Docker](https://www.docker.com/). We will then verify it is still working by executing the container locally. Once we have verified this is the case, we will push the container to a remote location, in this case [Google Container Registry (GCR)](https://cloud.google.com/container-registry/). This stages the container to be deployed on top of Google's fully managed Kubernetes solution: [Google Kubernetes Engine (GKE)](https://cloud.google.com/kubernetes-engine/).
+Next we are going to create an image with our analytics endpoint using [Docker](https://www.docker.com/). We will then verify everything is still working by executing the image in a local container (a _container_ is a _running instance of an image_). Once we have verified this is the case, we will push the image to a remote location, in this case [Google Container Registry (GCR)](https://cloud.google.com/container-registry/). This stages the image to be deployed as containers on top of Google's fully managed Kubernetes solution: [Google Kubernetes Engine (GKE)](https://cloud.google.com/kubernetes-engine/).
 
 ```bash
-# Build container:
+# Build image:
 docker build -f ../../services/docker/analytics-endpoint/Dockerfile -t "gcr.io/[your project id]/analytics-endpoint" ../../services
 
-# Check inside container:
+# Execute image as container & step inside it to explore it:
 docker run -it \
-  --env GCP=[your project id] \
+  --env GCP=[your project id] \ # Sets an environment variable
   --env BUCKET_NAME=[your project id]-analytics \
   --env SECRET_JSON=/secrets/json/analytics-gcs-writer.json \
   --env SECRET_P12=/secrets/p12/analytics-gcs-writer.p12 \
   --env EMAIL=analytics-gcs-writer@[your project id].iam.gserviceaccount.com \
-  -v [local JSON key path]:/secrets/json/analytics-gcs-writer.json \
+  -v [local JSON key path]:/secrets/json/analytics-gcs-writer.json \ # Mount volume from_local_path:to_path_in_container
   -v [local p12 key path]:/secrets/p12/analytics-gcs-writer.p12 \
-  --entrypoint bash \
-  gcr.io/[your project id]/analytics-endpoint:latest
+  --entrypoint bash \ # Override the default entrypoint of container
+  gcr.io/[your project id]/analytics-endpoint:latest # Image you want to execute as a container
 
 # Tip - Type & submit 'exit' to stop the container
 ```
@@ -134,7 +134,7 @@ gcloud container images list
 
 ### (1.3) - Deploying Analytics Endpoint Container onto GKE with Cloud Endpoints
 
-At this point we have a working container hosted in GCR, which GKE can pull containers from. We will now deploy our analytics endpoint on top of GKE. You can check out what your **[your k8s cluster name]** & **[your k8s cluster location]** are [in the Cloud Console](https://console.cloud.google.com/kubernetes/list).
+At this point we have a working image hosted in GCR, which GKE can pull from. We will now deploy our analytics endpoint on top of GKE. You can check out what your **[your k8s cluster name]** & **[your k8s cluster location]** are [in the Cloud Console](https://console.cloud.google.com/kubernetes/list).
 
 ```bash
 # Make sure you have the credentials to talk to the right cluster:

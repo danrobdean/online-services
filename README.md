@@ -95,7 +95,7 @@ A simple client which can be used to demo the PlayFab auth and matchmaking syste
 
 #### Analytics Pipeline
 
-Everything you need to get started with the collection of data to inform your game design.
+Everything you need to get started with the instrumentation of your game & the collection of data to inform your design.
 
 - [Explainer](./docs/analytics-pipeline/README.md)
 
