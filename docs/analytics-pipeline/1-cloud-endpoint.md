@@ -30,8 +30,8 @@ pip install -r ../../services/python/analytics-pipeline/src/requirements/endpoin
 # Set required environment variables, fill in []:
 export GCP=[your project id]
 export BUCKET_NAME=[your project id]-analytics
-export SECRET_JSON=[local JSON key path]
-export SECRET_P12=[local JSON key path]
+export SECRET_JSON=[local JSON key path writer]
+export SECRET_P12=[local p12 key path writer]
 export EMAIL=analytics-gcs-writer@[your project id].iam.gserviceaccount.com
 
 # Trigger script!
@@ -49,20 +49,26 @@ In a different terminal window, submit the following 2 `curl` POST requests in o
 curl --request POST \
   --header "content-type:application/json" \
   --data "{\"eventSource\":\"client\",\"eventClass\":\"test\",\"eventType\":\"endpoint_local\",\"eventTimestamp\":1562599755,\"eventIndex\":6,\"sessionId\":\"f58179a375290599dde17f7c6d546d78\",\"buildVersion\":\"2.0.13\",\"eventEnvironment\":\"testing\",\"eventAttributes\":{\"playerId\": 12345678}}" \
-  "http://0.0.0.0:8080/v1/event?key=local_so_does_not_matter&analytics_environment=testing&event_category=cold&session_id=f58179a375290599dde17f7c6d546d78"
+  "http://0.0.0.0:8080/v1/event?&analytics_environment=testing&event_category=cold&session_id=f58179a375290599dde17f7c6d546d78"
 
 # Verify v1/file method is working:
 curl --request POST \
   --header 'content-type:application/json' \
   --data "{\"content_type\":\"text/plain\", \"md5_digest\": \"XKvMhvwrORVuxdX54FQEdg==\"}" \
-  "http://0.0.0.0:8080/v1/file?key=local_so_does_not_matter&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"  
+  "http://0.0.0.0:8080/v1/file?&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"  
 ```
 
 If both requests returned proper JSON, without any error messages, the endpoint is working as expected! :tada:
 
 ### (1.2) - Containerizing the Analytics Endpoint
 
-Next we are going to create an image with our Analytics Endpoint using [Docker](https://www.docker.com/). We will then verify everything is still working by executing the image in a local container (a _container_ is a _running instance of an image_). Once we have verified this is the case, we will push the image to a remote location, in this case [Google Container Registry (GCR)](https://cloud.google.com/container-registry/). This stages the image to be deployed as containers on top of Google's fully managed Kubernetes solution: [Google Kubernetes Engine (GKE)](https://cloud.google.com/kubernetes-engine/).
+Next we are going to create an image which contains everything required in order to run our Analytics Endpoint using [Docker](https://www.docker.com/). We will then:
+
+1. Verify the image by executing the image in a local container (a container is a running instance of an image).
+2. Once we have verified this is the case, we will run our container alongside a second public container provided by Google which handles everything related to [Cloud Endpoints](https://cloud.google.com/endpoints/) in a local pod (a group of containers running together), mimicking the situation it will be in once deployed on [Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine/) (GKE - Google's fully managed Kubernetes solution).
+3. After we have verified our local pod is running as expected as well, we will push the image to a remote location, in this case [Google Container Registry (GCR)](https://cloud.google.com/container-registry/), which stages the image to be deployed as containers on your Kubernetes cluster.
+
+#### (1.2.1) - Verifying the Analytics Endpoint Image
 
 ```bash
 # Build image:
@@ -75,8 +81,8 @@ docker run -it \
   --env SECRET_JSON=/secrets/json/analytics-gcs-writer.json \
   --env SECRET_P12=/secrets/p12/analytics-gcs-writer.p12 \
   --env EMAIL=analytics-gcs-writer@[your project id].iam.gserviceaccount.com \
-  -v [local JSON key path]:/secrets/json/analytics-gcs-writer.json \ # Mount volume from_local_path:to_path_in_container
-  -v [local p12 key path]:/secrets/p12/analytics-gcs-writer.p12 \
+  -v [local JSON key path writer]:/secrets/json/analytics-gcs-writer.json \ # Mount volume from_local_path:to_path_in_container
+  -v [local p12 key path writer]:/secrets/p12/analytics-gcs-writer.p12 \
   --entrypoint bash \ # Override the default entrypoint of container
   gcr.io/[your project id]/analytics-endpoint:latest # Image you want to execute as a container
 
@@ -93,8 +99,8 @@ docker run \
   --env SECRET_JSON=/secrets/json/analytics-gcs-writer.json \
   --env SECRET_P12=/secrets/p12/analytics-gcs-writer.p12 \
   --env EMAIL=analytics-gcs-writer@[your project id].iam.gserviceaccount.com \
-  -v [local JSON key path]:/secrets/json/analytics-gcs-writer.json \
-  -v [local p12 key path]:/secrets/p12/analytics-gcs-writer.p12 \
+  -v [local JSON key path writer]:/secrets/json/analytics-gcs-writer.json \
+  -v [local p12 key path writer]:/secrets/p12/analytics-gcs-writer.p12 \
   -p 8080:8080 \
   gcr.io/[your project id]/analytics-endpoint:latest
 ```
@@ -106,35 +112,81 @@ As before, in a different terminal window, submit the follow 2 curl POST request
 curl --request POST \
   --header "content-type:application/json" \
   --data "{\"eventSource\":\"client\",\"eventClass\":\"test\",\"eventType\":\"endpoint_local_containerized\",\"eventTimestamp\":1562599755,\"eventIndex\":6,\"sessionId\":\"f58179a375290599dde17f7c6d546d78\",\"buildVersion\":\"2.0.13\",\"eventEnvironment\":\"testing\",\"eventAttributes\":{\"playerId\": 12345678}}" \
-  "http://0.0.0.0:8080/v1/event?key=local_so_does_not_matter&analytics_environment=testing&event_category=cold&session_id=f58179a375290599dde17f7c6d546d78"
+  "http://0.0.0.0:8080/v1/event?&analytics_environment=testing&event_category=cold&session_id=f58179a375290599dde17f7c6d546d78"
 
 # Verify v1/file method is working:
 curl --request POST \
   --header 'content-type:application/json' \
   --data "{\"content_type\":\"text/plain\", \"md5_digest\": \"XKvMhvwrORVuxdX54FQEdg==\"}" \
-  "http://0.0.0.0:8080/v1/file?key=local_so_does_not_matter&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"
+  "http://0.0.0.0:8080/v1/file?&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"
 
-# To stop the running container:
+# To stop the running container, press Cntrl + C, or:
 docker ps # Copy the [container id]
 docker kill [container id]
 ```
 
-In case the requests were successful, we can now push the container to GCR:
+If both requests returned proper JSON again without any errors, we have verified our Analytics Endpoint image is working :boom:!
+
+#### (1.2.2) - Verifying the Analytics Endpoint with ESP
+
+When deploying the Analytics Endpoint on GKE, we will do this by deploying a pod that contains two containers:
+
+- Our Analytics Endpoint with custom server code.
+- A public ESP container provided by Google which runs everything related to [Cloud Endpoints](https://cloud.google.com/endpoints/).
+
+In order to mimic this situation locally, we will use docker-compose.
+
+First you need to [get an API key for your GCP](https://console.cloud.google.com/apis/credentials), which you need to pass via the **key** parameter in the url of your POST request: **[your gcp api key]**. This is something we configured the ESP container to require, before forwarding the request onto our Analytics Endpoint. Note that is is currently [not possible to provision this an API key programmatically](https://issuetracker.google.com/issues/76227920) & that **it takes some time before API keys become fully functional, to be safe wait at least 10 minutes** before attempting the below POST requests.
 
 ```bash
-# Make sure you are in the right project
+# First set a few environment variables:
+export LOCAL_SA_KEY_JSON=[local JSON key path writer]
+export LOCAL_SA_KEY_P12=[local p12 key path writer]
+export LOCAL_SA_KEY_JSON_ESP=[local JSON key path endpoint]
+export GOOGLE_PROJECT_ID=logical-flame-194710
+
+# Start a local pod containing both containers:
+docker-compose -f ../../services/docker/docker_compose_local_analytics.yml up
+
+# Verify v1/event method is working:
+curl --request POST \
+  --header "content-type:application/json" \
+  --data "{\"eventSource\":\"client\",\"eventClass\":\"test\",\"eventType\":\"endpoint_k8s_containerized\",\"eventTimestamp\":1562599755,\"eventIndex\":6,\"sessionId\":\"f58179a375290599dde17f7c6d546d78\",\"buildVersion\":\"2.0.13\",\"eventEnvironment\":\"testing\",\"eventAttributes\":{\"playerId\": 12345678}}" \
+  "http://0.0.0.0:8080/v1/event?key=[your gcp api key]&analytics_environment=testing&event_category=cold&session_id=f58179a375290599dde17f7c6d546d78"
+
+# Verify v1/file method is working:
+curl --request POST \
+  --header 'content-type:application/json' \
+  --data "{\"content_type\":\"text/plain\", \"md5_digest\": \"XKvMhvwrORVuxdX54FQEdg==\"}" \
+  "http://0.0.0.0:8080/v1/file?key=[your gcp api key]&analytics_environment=testing&event_category=crashdump-worker&file_parent=parent&file_child=child"
+
+# To stop execution of our local pod press Cntrl + C, or:
+docker ps # Copy [container id 1] & [container id 2]
+docker kill [container id 1] [container id 2]
+```
+
+In case the requests were successful again, we can now proceed to push our Analytics Endpoint image to GCR! :clap:
+
+#### (1.2.3) - Pushing the Analytics Endpoint Image to GCR
+
+The following commands will take your local Analytics Endpoint Docker image and push it to [Google Container Registry](https://cloud.google.com/container-registry/).
+
+```bash
+# Make sure you are in the right project:
 gcloud config set project [your project id]
 
-# Upload image to Google Container Registry (GCR)
+# Upload image to Google Container Registry (GCR):
 docker push gcr.io/[your project id]/analytics-endpoint:latest
 
-# Verify your image is uploaded
+# Verify your image is uploaded:
 gcloud container images list
 ```
 
+Alternatively, you can verify your image is uploaded [in the Cloud Console](https://console.cloud.google.com/gcr/images/).
+
 ### (1.3) - Deploying Analytics Endpoint Container onto GKE with Cloud Endpoints
 
-At this point we have a working image hosted in GCR, which GKE can pull from. We will now deploy our Analytics Endpoint on top of GKE. You can check out what your **[your k8s cluster name]** & **[your k8s cluster location]** are [in the Cloud Console](https://console.cloud.google.com/kubernetes/list).
+At this point we have a working image hosted in GCR, which GKE can pull from. We will now deploy our Analytics Endpoint on your Kubernetes cluster. You can check out what your **[your k8s cluster name]** & **[your k8s cluster location]** are [in the Cloud Console](https://console.cloud.google.com/kubernetes/list).
 
 ```bash
 # Make sure you have the credentials to talk to the right cluster:
@@ -155,8 +207,6 @@ We now first need to make a few edits to our Kubernetes YAML files:
 ```bash
 kubectl apply -f ../../services/k8s/analytics-endpoint
 ```
-
-Next, [get an API key for your GCP](https://console.cloud.google.com/apis/credentials), which you need to pass via the **key** parameter in the url of your POST request: **[your gcp api key]**. Note that is is currently [not possible to provision this one programmatically](https://issuetracker.google.com/issues/76227920). Also note that **it takes some time before API keys become fully functional, to be safe wait at least 10 minutes** before attempting the below POST requests:
 
 ```bash
 # Verify v1/event method is working:

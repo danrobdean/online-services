@@ -30,7 +30,7 @@ Second, we will use our [scale test script](../../services/python/analytics-pipe
 
 ```bash
 python ../../services/python/analytics-pipeline/src/endpoint/scale-test.py \
-  --gcp-secret-path=[local JSON key path] \
+  --gcp-secret-path=[local JSON key path writer] \
   --host=http://analytics.endpoints.[your project id].cloud.goog/ \
   --api-key=[your gcp api key] \
   --bucket-name=[your project id]-analytics \
