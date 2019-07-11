@@ -10,7 +10,7 @@ export IMAGE=analytics-endpoint-bk
 export API_KEY=/secrets/api-key.json
 
 # Build container:
-docker build -f services/docker/analytics-endpoint/Dockerfile -t gcr.io/${GCP}/${IMAGE}:latest
+docker build -f services/docker/analytics-endpoint/Dockerfile -t gcr.io/${GCP}/${IMAGE}:latest ./services
 
 # Grab secrets from Vault:
 imp-ci secrets read --environment=production --buildkite-org=improbable --secret-type=gce-key-pair --secret-name=${GCP}/event-gcs-writer-json --write-to=/secrets/analytics-gcs-writer.json
