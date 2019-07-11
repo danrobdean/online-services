@@ -4,8 +4,8 @@ The situation might arise that querying GCS as an external table, or periodicall
 
 In order to facilitate this, we provide two things:
 
-1. [A Cloud Function that picks up event files that are written into a specific GCS URI prefix, and forwards them into native BigQuery storage.](#1---utilizing-the-cloud-function)
-2. [A batch script to backfill events files.](#2---executing-backfills)
+1. [A Cloud Function that picks up analytics event files that are written into a specific GCS URI prefix, and forwards them into native BigQuery storage.](#1---utilizing-the-cloud-function)
+2. [A batch script to backfill analytics event files.](#2---executing-backfills)
 
 ## (1) - Utilizing the Cloud Function
 
@@ -14,7 +14,7 @@ When deploying [the analytics Terraform module](../../services/terraform/module-
 The function:
 
 - Provisions required BigQuery datasets & tables if they do not already exist.
-- Verifies it is parsing ~ game events (by looking for **eventClass** in each event).
+- Verifies it is parsing ~ analytics events (by looking for **eventClass** in each event).
 - Safely parses all expected event keys:
     + It tries parsing keys as both camelCase & snake_case.
     + It returns NULL if key not present.
@@ -36,6 +36,8 @@ After submitting the event, verify in [the BigQuery UI](https://console.cloud.go
 - There is now a dataset called `events` with table called `events_function` which contains your event.
 - There is now a dataset called `logs` with a table called `events_logs_function` which contains a parse log of your event.
 - The `logs` dataset will also contain two more empty tables: `events_debug_batch` & `events_logs_function_backfill`.
+
+_Tip - Re-submit the curl request without eventClass in the --data payload (or just swap it out for random JSON) to see how errors are written into `logs.events_debug_batch`!_
 
 ## (2) - Executing Backfills
 

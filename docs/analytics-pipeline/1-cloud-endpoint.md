@@ -62,7 +62,7 @@ If both requests returned proper JSON, without any error messages, the endpoint 
 
 ### (1.2) - Containerizing the Analytics Endpoint
 
-Next we are going to create an image with our analytics endpoint using [Docker](https://www.docker.com/). We will then verify everything is still working by executing the image in a local container (a _container_ is a _running instance of an image_). Once we have verified this is the case, we will push the image to a remote location, in this case [Google Container Registry (GCR)](https://cloud.google.com/container-registry/). This stages the image to be deployed as containers on top of Google's fully managed Kubernetes solution: [Google Kubernetes Engine (GKE)](https://cloud.google.com/kubernetes-engine/).
+Next we are going to create an image with our Analytics Endpoint using [Docker](https://www.docker.com/). We will then verify everything is still working by executing the image in a local container (a _container_ is a _running instance of an image_). Once we have verified this is the case, we will push the image to a remote location, in this case [Google Container Registry (GCR)](https://cloud.google.com/container-registry/). This stages the image to be deployed as containers on top of Google's fully managed Kubernetes solution: [Google Kubernetes Engine (GKE)](https://cloud.google.com/kubernetes-engine/).
 
 ```bash
 # Build image:
@@ -134,7 +134,7 @@ gcloud container images list
 
 ### (1.3) - Deploying Analytics Endpoint Container onto GKE with Cloud Endpoints
 
-At this point we have a working image hosted in GCR, which GKE can pull from. We will now deploy our analytics endpoint on top of GKE. You can check out what your **[your k8s cluster name]** & **[your k8s cluster location]** are [in the Cloud Console](https://console.cloud.google.com/kubernetes/list).
+At this point we have a working image hosted in GCR, which GKE can pull from. We will now deploy our Analytics Endpoint on top of GKE. You can check out what your **[your k8s cluster name]** & **[your k8s cluster location]** are [in the Cloud Console](https://console.cloud.google.com/kubernetes/list).
 
 ```bash
 # Make sure you have the credentials to talk to the right cluster:
@@ -232,9 +232,9 @@ Each analytics event, which is a JSON dictionary, should adhere to the following
 
 **Keys should always be camelCase**, whereas values snake_case whenever appropriate. The idea is that all **root keys of the dictionary** are **always present for any event**. Anything custom to a particular event should be nested within eventAttributes. If there is nothing to nest it should be an empty dict (but still present).
 
-In case a server-side event is triggered around a player (vs. AI), always make sure the player_id (or character_id) is captured within eventAttributes. Else you will have no way of knowing which player the event belonged to. For client-side events, as long as there is at least one login event which pairs up the player_id with the client's sessionId, we can always backtrack which other client-side events belonged to a specific player.
+In case a server-side event is triggered around a player (vs. AI), always make sure the playerId (or characterId) is captured within eventAttributes. Else you will have no way of knowing which player the event belonged to. For client-side events, as long as there is at least one event which pairs up the playerId with the client's sessionId (e.g. `login`), we can always backtrack which other client-side events belonged to a specific player.
 
-Finally, note that player_id is not a root field of our events, because it will not always be present for any event (e.g. AI induced events, client-side events pre-login, etc.).
+Finally, note that playerId is not a root field of our events, because it will not always be present for any event (e.g. AI induced events, client-side events pre-login, etc.).
 
 #### (2.1.3) - Instrumentation Tips
 
@@ -290,7 +290,7 @@ kubectl describe pod [pod id]
 # Show logs of a specific container:
 kubectl logs [pod id] [container name]
 
-# Step inside running container
+# Step inside running container:
 kubectl exec [pod id] -c [container name] -it bash
 
 # Where [container name] = analytics-deployment-server or analytics-deployment-endpoint

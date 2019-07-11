@@ -16,10 +16,7 @@ Either choose a **Native BigQuery Table** (static import of GCS data):
 - Partition and cluster settings:
     + Partitioning: **By field: eventTimestamp**
     + Clustering order: `eventClass,eventType` (optional)
-- Write preference, choose one of:
-    + Write if empty
-    + Append to table
-    + Overwrite table
+- Write preference, choose one of: {Write if empty, Append to table, Overwrite table}.
 
 Or an **External BigQuery Table** (live link with GCS data):
 
@@ -33,7 +30,7 @@ For both External & Native tables the following settings can be identical:
 - Create table from: **Google Cloud Storage**
 - Select file from GCS bucket: `gs://[your project id]-analytics/data_type=json/analytics_environment=testing/event_category=cold/*`
 - File format: **JSON (Newline-delimited)**
-- Schema (select _Edit as text_): `eventEnvironment:STRING,batchId:STRING,eventId:STRING,eventClass:STRING,eventType:STRING,sessionId:STRING,eventSource:STRING,eventIndex:INTEGER,buildVersion:STRING,eventTimestamp:TIMESTAMP,receivedTimestamp:TIMESTAMP,eventAttributes:STRING`
+- Schema (select **Edit as text**): `eventEnvironment:STRING,batchId:STRING,eventId:STRING,eventClass:STRING,eventType:STRING,sessionId:STRING,eventSource:STRING,eventIndex:INTEGER,buildVersion:STRING,eventTimestamp:TIMESTAMP,receivedTimestamp:TIMESTAMP,eventAttributes:STRING`
 - Under **Advanced options** select **Ignore unknown values**
 
 Now hit **Create table** again!
@@ -41,7 +38,7 @@ Now hit **Create table** again!
 The following usage notes apply:
 
 - Values denoted in the **schema** that are **not present in the event** JSON dictionary in GCS will be shown as **NULL in BigQuery**.
-- If you want to omit importing certain event attributes by excluding them from the schema, you **must** select **"Ignore unknown values"**.
+- If you want to omit importing certain event attributes by excluding them from the schema, you **must** select **Ignore unknown values**.
 
 _Tip: The GCS file path [accepts wildcards](https://cloud.google.com/bigquery/external-data-cloud-storage#wildcard-support)._
 
