@@ -10,7 +10,7 @@ export IMAGE=analytics-endpoint-bk
 export API_KEY=/secrets/api-key.json
 
 # Build container:
-docker build -f /services/docker/analytics-pipeline/Dockerfile -t gcr.io/${GCP}/${IMAGE}:latest
+docker build -f services/docker/analytics-endpoint/Dockerfile -t gcr.io/${GCP}/${IMAGE}:latest
 
 # Grab secrets from Vault:
 imp-ci secrets read --environment=production --buildkite-org=improbable --secret-type=gce-key-pair --secret-name=${GCP}/event-gcs-writer-json --write-to=/secrets/analytics-gcs-writer.json
@@ -21,7 +21,7 @@ imp-ci secrets read --environment=production --buildkite-org=improbable --secret
 cat /secrets/analytics-gcs-writer-p12.json | jq -r .token > /secrets/analytics-gcs-writer.p12
 
 # Start a local pod containing both containers:
-docker-compose -f /services/docker/docker_compose_local_analytics.yml up --detach
+docker-compose -f services/docker/docker_compose_local_analytics.yml up --detach
 
 # Parse API key:
 API_KEY_TOKEN=$(echo $(cat ${API_KEY}) | jq -r .token)
