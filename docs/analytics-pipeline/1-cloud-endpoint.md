@@ -86,7 +86,7 @@ docker run -it \
 Now let's verify the container is working as expected, by running it locally:
 
 ```bash
-# Run container locally:
+# Execute image as container:
 docker run \
   --env GCP=[your project id] \
   --env BUCKET_NAME=[your project id]-analytics \
@@ -125,7 +125,7 @@ In case the requests were successful, we can now push the container to GCR:
 # Make sure you are in the right project
 gcloud config set project [your project id]
 
-# Upload container to Google Container Registry (GCR)
+# Upload image to Google Container Registry (GCR)
 docker push gcr.io/[your project id]/analytics-endpoint:latest
 
 # Verify your image is uploaded
@@ -207,12 +207,12 @@ Note that {**data_type**} is determined automatically and can either be **json**
 
 Note that the **event_category** parameter is particularly **important**:
 
-- When set to **function** all data contained in the POST request will be **ingested into native BigQuery storage** using [the analytics Cloud Function (`function-gcs-to-bq-.*`)](https://console.cloud.google.com/functions/list) we created when we deployed [the analytics module with Terraform]((https://github.com/improbable/online-services/tree/master/services/terraform)).
+- When set to **function** all data contained in the POST request will be **ingested into native BigQuery storage** using [the analytics Cloud Function (`function-gcs-to-bq-.*`)](https://console.cloud.google.com/functions/list) we created when we deployed [the analytics module with Terraform]((https://github.com/improbable/online-services/tree/master/services/terraform)). More information about this later in [the third part of the Analytics Pipeline documentation](./3-bigquery-cloud-function.md).
 - When set to **anything else** all data contained in the POST request will **arrive in GCS**, but will **not by default be ingested into native BigQuery storage**. This data can however still be accessed with BigQuery by using GCS as an external data source.
 
 Note that **function** is a completely arbitrary string, but we have established [GCS notifications to trigger Pub/Sub notifications to the Pub/Sub Topic that feeds our analytics Cloud Function](../../services/terraform/module-analytics/pubsub.tf) whenever files are created on this particular GCS prefix. In this case these notifications invoke our analytics Cloud Function which ingests these files into native BigQuery storage.
 
-Over-time we can imagine developers extending this setup in new ways: perhaps crashdumps are written into **crashdump** (either via `v1/event` or `v1/file`) which will trigger a different Cloud Function with the appropriate logic to parse it and write relevant information into BigQuery, or **frames_per_second** will be used for high volume frames-per-second events that are subsequently aggregated with a Dataflow (Stream / Batch) script _before_ being written into BigQuery.
+Over-time we can imagine developers extending this setup in new ways: perhaps crashdumps are written into **crashdump** (either via `v1/event` or `v1/file` depending on size) which will trigger a different Cloud Function with the appropriate logic to parse it and write relevant information into BigQuery, or **frames_per_second** will be used for high volume frames-per-second events that are subsequently aggregated with a Dataflow (Stream / Batch) script _before_ being written into BigQuery.
 
 #### (2.1.2) - The JSON Event Schema
 
@@ -220,7 +220,7 @@ Each analytics event, which is a JSON dictionary, should adhere to the following
 
 | Key                | Type    | Description |
 |--------------------|---------|-------------|
-| `eventEnvironment` | string  | One of  {**testing**, **development**, **staging**, **production**, **live**}. |
+| `eventEnvironment` | string  | One of {testing, development, staging, production, live}. |
 | `eventIndex`       | integer | Increments with one with each event per sessionId, allows spotting missing data. |
 | `eventSource`      | string  | Source of the event (e.g. client/server ~ worker type). |
 | `eventClass`       | string  | A higher order mnemonic classification of events (e.g. session). |
