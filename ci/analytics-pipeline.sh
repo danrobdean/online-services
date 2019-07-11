@@ -3,22 +3,25 @@ set -e
 
 # Set environment variables for docker-compose:
 export GCP=logical-flame-194710
-export SECRET_JSON=/secrets/analytics-gcs-writer.json
-export SECRET_P12=/secrets/analytics-gcs-writer.p12
-export SECRET_JSON_ESP=/secrets/analytics-endpoint.json
+export SECRET_JSON=/tmp/ci/secrets/analytics-gcs-writer.json
+export SECRET_P12=/tmp/ci/secrets/analytics-gcs-writer.p12
+export SECRET_JSON_ESP=/tmp/ci/secrets/analytics-endpoint.json
 export IMAGE=analytics-endpoint-bk
-export API_KEY=/secrets/api-key.json
+export API_KEY=/tmp/ci/secrets/api-key.json
 
 # Build container:
 docker build -f services/docker/analytics-endpoint/Dockerfile -t gcr.io/${GCP}/${IMAGE}:latest ./services
 
 # Grab secrets from Vault:
-imp-ci secrets read --environment=production --buildkite-org=improbable --secret-type=gce-key-pair --secret-name=${GCP}/analytics-gcs-writer-json --write-to=/secrets/analytics-gcs-writer.json
-imp-ci secrets read --environment=production --buildkite-org=improbable --secret-type=generic-token --secret-name=${GCP}/analytics-gcs-writer-p12 --write-to=/secrets/analytics-gcs-writer-p12.json
-imp-ci secrets read --environment=production --buildkite-org=improbable --secret-type=gce-key-pair --secret-name=${GCP}/analytics-endpoint-json --write-to=/secrets/analytics-endpoint.json
-imp-ci secrets read --environment=production --buildkite-org=improbable --secret-type=generic-token --secret-name=${GCP}/api-key --write-to=/secrets/api-key.json
+rmdir /tmp/ci || true
+mkdir /tmp/ci
 
-cat /secrets/analytics-gcs-writer-p12.json | jq -r .token > /secrets/analytics-gcs-writer.p12
+imp-ci secrets read --environment=production --buildkite-org=improbable --secret-type=gce-key-pair --secret-name=${GCP}/analytics-gcs-writer-json --write-to=/tmp/ci/secrets/analytics-gcs-writer.json
+imp-ci secrets read --environment=production --buildkite-org=improbable --secret-type=generic-token --secret-name=${GCP}/analytics-gcs-writer-p12 --write-to=/tmp/ci/secrets/analytics-gcs-writer-p12.json
+imp-ci secrets read --environment=production --buildkite-org=improbable --secret-type=gce-key-pair --secret-name=${GCP}/analytics-endpoint-json --write-to=/tmp/ci/secrets/analytics-endpoint.json
+imp-ci secrets read --environment=production --buildkite-org=improbable --secret-type=generic-token --secret-name=${GCP}/api-key --write-to=/tmp/ci/secrets/api-key.json
+
+cat /tmp/ci/secrets/analytics-gcs-writer-p12.json | jq -r .token > /tmp/ci/secrets/analytics-gcs-writer.p12
 
 # Start a local pod containing both containers:
 docker-compose -f services/docker/docker_compose_local_analytics.yml up --detach
@@ -44,5 +47,6 @@ finish() {
   # Stops and removes all containers.
   docker-compose -f ../services/docker/docker_compose_local_analytics.yml down
   docker-compose -f ../services/docker/docker_compose_local_analytics.yml rm --force
+  rmdir /tmp/ci || exit 0
 }
 trap finish EXIT
