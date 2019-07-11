@@ -12,6 +12,10 @@ resource "google_storage_bucket" "functions_bucket" {
   name          = "${var.gcloud_project}-cloud-functions"
   location      = var.gcloud_analytics_bucket_location
   storage_class = "MULTI_REGIONAL"
+
+  versioning {
+    enabled = true
+  }
 }
 
 # Note - if there are files present in your bucket while you are trying to destroy it,
