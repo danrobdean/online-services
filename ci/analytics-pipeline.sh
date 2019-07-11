@@ -10,6 +10,7 @@ export IMAGE=analytics-endpoint-bk
 export API_KEY=/tmp/ci-online-services/secrets/api-key.json
 
 # Build container:
+docker kill $(docker ps -q)
 docker build -f services/docker/analytics-endpoint/Dockerfile -t gcr.io/${GCP}/${IMAGE}:latest ./services
 
 # Refresh /tmp/ci-online-services:
@@ -25,7 +26,8 @@ imp-ci secrets read --environment=production --buildkite-org=improbable --secret
 cat /tmp/ci-online-services/secrets/analytics-gcs-writer-p12.json | jq -r .token > /tmp/ci-online-services/secrets/analytics-gcs-writer.p12
 
 # Start a local pod containing both containers:
-docker-compose -f services/docker/docker_compose_local_analytics.yml up --detach
+docker-compose -f services/docker/docker_compose_local_analytics.yml up --no-start
+docker-compose -f services/docker/docker_compose_local_analytics.yml start
 
 # Parse API key:
 API_KEY_TOKEN=$(echo $(cat ${API_KEY}) | jq -r .token)
@@ -46,8 +48,8 @@ if [ "${STATUS_CODE}" != "200" ]; then echo 'Error: v1/file did not return 200!'
 
 finish() {
   # Stops and removes all containers.
-  docker-compose -f ../services/docker/docker_compose_local_analytics.yml down
-  docker-compose -f ../services/docker/docker_compose_local_analytics.yml rm --force
+  docker-compose -f services/docker/docker_compose_local_analytics.yml down
+  docker-compose -f services/docker/docker_compose_local_analytics.yml rm --force
   rm -rf /tmp/ci-online-services || exit 0
 }
 trap finish EXIT
