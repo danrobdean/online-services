@@ -26,9 +26,9 @@ imp-ci secrets read --environment=production --buildkite-org=improbable --secret
 cat /tmp/ci-online-services/secrets/analytics-gcs-writer-p12.json | jq -r .token > /tmp/ci-online-services/secrets/analytics-gcs-writer.p12
 
 # Start a local pod containing both containers:
-docker-compose -f services/docker/docker_compose_local_analytics.yml up --no-start
-docker-compose -f services/docker/docker_compose_local_analytics.yml start
-sleep 10
+docker-compose -f services/docker/docker_compose_local_analytics.yml up --detach #--no-start
+# docker-compose -f services/docker/docker_compose_local_analytics.yml start
+# sleep 10
 
 # Parse API key:
 API_KEY_TOKEN=$(echo $(cat ${API_KEY}) | jq -r .token)
@@ -51,6 +51,7 @@ finish() {
   # Stops and removes all containers.
   docker-compose -f services/docker/docker_compose_local_analytics.yml down
   docker-compose -f services/docker/docker_compose_local_analytics.yml rm --force
-  rm -rf /tmp/ci-online-services || exit 0
+  # rm -rf /tmp/ci-online-services || exit 0
+  docker kill $(docker ps -q)
 }
 trap finish EXIT
