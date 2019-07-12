@@ -129,7 +129,7 @@ If both requests returned proper JSON again without any errors, we have verified
 
 #### (1.2.2) - Verifying the Analytics Endpoint with ESP
 
-When deploying the Analytics Endpoint on GKE, we will do this by deploying (a) pod(s) that contains two containers:
+When deploying the Analytics Endpoint on GKE, we will do this by deploying a pod (or multiple copies of a pod) that contains two containers:
 
 - Our Analytics Endpoint with custom server code.
 - A public ESP container provided by Google which runs everything related to [Cloud Endpoints](https://cloud.google.com/endpoints/).
@@ -254,12 +254,12 @@ These parameters (except for `key`) influence where the data ends up in the GCS 
 
 > gs://gcp-analytics-pipeline-events/data\_type={data\_type}/analytics\_environment={analytics\_environment}/event\_category={event\_category}/event\_ds={event\_ds}/event\_time={event\_time}/{session\_id}/{ts\_fmt}\-{rand_int}
 
-Note that {**data_type**} is determined automatically and can either be **json** (when valid JSON is POST'ed) or **unknown** (otherwise). The fields {**ts_fmt**} (a human-readable timestamp) & {**rand_int**} (a random integer to avoid collisions) are automatically set by the endpoint as well.
+Note that **{data_type}** is determined automatically and can either be **json** (when valid JSON is POST'ed) or **unknown** (otherwise). The fields **{ts_fmt}** (a human-readable timestamp) & **{rand_int}** (a random integer to avoid collisions) are automatically set by the endpoint as well.
 
 Note that the **event_category** parameter is particularly **important**:
 
 - When set to **function** all data contained in the POST request will be **ingested into native BigQuery storage** using [the analytics Cloud Function (`function-gcs-to-bq-.*`)](https://console.cloud.google.com/functions/list) we created when we deployed [the analytics module with Terraform]((https://github.com/improbable/online-services/tree/master/services/terraform)). More information about this later in [the third part of the Analytics Pipeline documentation](./3-bigquery-cloud-function.md).
-- When set to **anything else** all data contained in the POST request will **arrive in GCS**, but will **not by default be ingested into native BigQuery storage**. This data can however still be accessed with BigQuery by using GCS as an external data source.
+- When set to **anything else** all data contained in the POST request will **arrive in GCS**, but will **not by default be ingested into native BigQuery storage**. This data can however still be accessed with BigQuery by using GCS as an external data source. More information about this later in [the second part of the Analytics Pipeline documentation](./2-bigquery-gcs-external.md).
 
 Note that **function** is a completely arbitrary string, but we have established [GCS notifications to trigger Pub/Sub notifications to the Pub/Sub Topic that feeds our analytics Cloud Function](../../services/terraform/module-analytics/pubsub.tf) whenever files are created on this particular GCS prefix. In this case these notifications invoke our analytics Cloud Function which ingests these files into native BigQuery storage.
 

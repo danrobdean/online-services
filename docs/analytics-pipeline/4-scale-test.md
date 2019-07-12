@@ -94,7 +94,9 @@ SELECT
   a.n * COUNT(*) AS total_no_events
 FROM
     (
-    SELECT batch_id, COUNT(*) as n
+    SELECT
+      batch_id,
+      COUNT(*) AS n
     FROM events.events_function
     WHERE event_type = '[scale test name]'
     GROUP BY 1

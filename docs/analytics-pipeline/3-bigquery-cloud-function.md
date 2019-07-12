@@ -19,7 +19,8 @@ The function:
     + It tries parsing keys as both camelCase & snake_case.
     + It returns NULL if key not present.
     + It ignores unexpected keys.
-- Augments the events with a **job_name** & an **inserted_timestamp**.
+- Augments the events with a **jobName** & an **insertedTimestamp**.
+- Turns camelCase keys into snake_case table column names.
 - Writes the events into an events table, a log into a logs table & in case parsing failed an error into a debug table.
 
 In order to utilize the function, you have to make sure **event_category** is set to **function** when POST'ing your events:
@@ -98,7 +99,7 @@ Note that we are following the GCS file tree with many of our inputs:
 
 Check out the execution of your Dataflow Batch script in [the Dataflow Console](https://console.cloud.google.com/dataflow)!
 
-If you pointed the backfill script to files in GCS that were **not already ingested**, verify in [the BigQuery UI](https://console.cloud.google.com/bigquery):
+If you pointed the backfill script to files in GCS that were **not already present in BigQuery**, verify in [the BigQuery UI](https://console.cloud.google.com/bigquery):
 
 - There are now parse logs from your Dataflow job in `logs.events_logs_function_backfill`
 - There are now parse logs from the analytics Cloud Function in `logs.events_logs_function`
