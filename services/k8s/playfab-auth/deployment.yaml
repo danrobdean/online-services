@@ -16,11 +16,11 @@ spec:
     spec:
       containers:
       - name: esp
-        image: gcr.io/endpoints-release/endpoints-runtime:1.16.0
+        image: gcr.io/endpoints-release/endpoints-runtime:1.38.0
         args: [
           "--http_port=9001",
           "--http2_port=9000",
-          "--service=playfab-auth.endpoints.[your Google project id].cloud.goog", # Update
+          "--service=playfab-auth.endpoints.logical-flame-194710.cloud.goog", # Update
           "--rollout_strategy=managed",
           "--backend=grpc://127.0.0.1:4040"
         ]
@@ -28,7 +28,7 @@ spec:
           - containerPort: 9000
           - containerPort: 9001
       - name: playfab-auth
-        image: gcr.io/[your Google project id]/playfab-auth # Update
+        image: gcr.io/logical-flame-194710/playfab-auth # Update
         imagePullPolicy: Always
         ports:
         - containerPort: 4040

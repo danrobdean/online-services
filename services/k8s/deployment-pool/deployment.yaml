@@ -24,7 +24,7 @@ spec:
               name: "launch-config"
       containers:
       - name: deployment-pool
-        image: gcr.io/[your Google project id]/deployment-pool # Update
+        image: gcr.io/logical-flame-194710/deployment-pool # Update
         imagePullPolicy: Always
         volumeMounts:
         - name: pool-config

@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Google.LongRunning;
 using Grpc.Core;
 using Improbable.OnlineServices.Common;
+using Improbable.OnlineServices.Common.Analytics;
 using Improbable.OnlineServices.DataModel;
 using Improbable.OnlineServices.DataModel.Gateway;
 using Improbable.OnlineServices.DataModel.Party;
@@ -18,7 +19,7 @@ namespace Gateway
     {
         private readonly IMemoryStoreClientManager<IMemoryStoreClient> _memoryStoreClientManager;
 
-        public GatewayServiceImpl(IMemoryStoreClientManager<IMemoryStoreClient> memoryStoreClientManager)
+        public GatewayServiceImpl(IMemoryStoreClientManager<IMemoryStoreClient> memoryStoreClientManager, IAnalyticsSender analyticsSender)
         {
             _memoryStoreClientManager = memoryStoreClientManager;
         }

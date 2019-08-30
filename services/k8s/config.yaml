@@ -4,6 +4,6 @@ metadata:
   name: online-services-config
   selfLink: /api/v1/namespaces/default/configmaps/online-services-config
 data:
-  redis.connection-string: "[your Redis host]:6379"
-  spatialos.project: "[your spatialOS project]"
-  playfab.title: "[your PlayFab title ID]"
+  redis.connection-string: "10.0.3.3:6379"
+  spatialos.project: "beta_princess_grey_193"
+  playfab.title: "Unknown"

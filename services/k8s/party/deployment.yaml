@@ -16,11 +16,11 @@ spec:
     spec:
       containers:
       - name: esp
-        image: gcr.io/endpoints-release/endpoints-runtime:1.16.0
+        image: gcr.io/endpoints-release/endpoints-runtime:1.38.0
         args: [
           "--http_port=9001",
           "--http2_port=9000",
-          "--service=party.endpoints.[your Google project id].cloud.goog", # Update
+          "--service=party.endpoints.logical-flame-194710.cloud.goog", # Update
           "--rollout_strategy=managed",
           "--backend=grpc://127.0.0.1:4040"
         ]
@@ -28,7 +28,7 @@ spec:
           - containerPort: 9000
           - containerPort: 9001
       - name: party
-        image: gcr.io/[your Google project id]/party # Update
+        image: gcr.io/logical-flame-194710/party # Update
         imagePullPolicy: Always
         ports:
         - containerPort: 4040
@@ -52,3 +52,24 @@ spec:
         - "4040"
         - --redis_connection_string
         - "$(REDIS_CONNECTION_STRING)"
+        - --analytics.endpoint
+        - "http://analytics.endpoints.logical-flame-194710.cloud.goog:80/v1/event"
+        - --analytics.allow-insecure-endpoint
+        - --analytics.config-file-path
+        - "/config/config-analytics.yaml"
+        - --analytics.gcp-key-path
+        - "/secrets/analytics-api-key.txt"
+        - --analytics.environment
+        - "testing"
+        volumeMounts:
+        - mountPath: /secrets/
+          name: analytics-api-key
+        - mountPath: /config/
+          name: config-analytics
+      volumes:
+      - name: analytics-api-key
+        secret:
+          secretName: analytics-api-key
+      - name: config-analytics
+        configMap:
+          name: config-analytics

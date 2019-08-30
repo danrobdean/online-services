@@ -1,0 +1,10 @@
+apiVersion: v1
+data:
+  config-analytics.yaml: |-
+    "*":
+      "*":
+       category: online_services
+kind: ConfigMap
+metadata:
+  name: config-analytics
+  selfLink: /api/v1/namespaces/default/configmaps/config-analytics

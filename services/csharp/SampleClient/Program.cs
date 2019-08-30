@@ -74,10 +74,12 @@ namespace SampleClient
                     var playFabId = playFabLoginResult.Result.PlayFabId;
 
                     Console.WriteLine($"Got a token for PlayFab ID {playFabId}.");
+                    Console.WriteLine(authServiceUrl);
 
                     // Next, exchange the token with our auth service for a PIT.
                     var playFabAuthClient = new AuthService.AuthServiceClient(
                         new Channel(authServiceUrl, ChannelCredentials.Insecure));
+                    Console.WriteLine("Check");
                     var authResult = playFabAuthClient.ExchangePlayFabToken(new ExchangePlayFabTokenRequest
                     {
                         PlayfabToken = playFabLoginResult.Result.SessionTicket
