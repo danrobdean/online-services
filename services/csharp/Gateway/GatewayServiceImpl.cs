@@ -23,7 +23,7 @@ namespace Gateway
         public GatewayServiceImpl(IMemoryStoreClientManager<IMemoryStoreClient> memoryStoreClientManager, IAnalyticsSender analytics)
         {
             _memoryStoreClientManager = memoryStoreClientManager;
-            _analytics = analytics.WithEventClass("gateway_gateway");
+            _analytics = analytics.WithEventClass("gateway");
         }
 
         public override async Task<Operation> Join(JoinRequestProto request, ServerCallContext context)

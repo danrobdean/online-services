@@ -64,3 +64,24 @@ spec:
         - "$(SPATIAL_PROJECT)"
         - --playfab_title_id
         - "$(PLAYFAB_TITLE_ID)"
+        - --analytics.endpoint
+        - "http://analytics.endpoints.logical-flame-194710.cloud.goog:80/v1/event"
+        - --analytics.allow-insecure-endpoint
+        - --analytics.config-file-path
+        - "/config/config-analytics.yaml"
+        - --analytics.gcp-key-path
+        - "/secrets/analytics-api-key.txt"
+        - --analytics.environment
+        - "testing"
+        volumeMounts:
+        - mountPath: /secrets/
+          name: analytics-api-key
+        - mountPath: /config/
+          name: config-analytics
+      volumes:
+      - name: analytics-api-key
+        secret:
+          secretName: analytics-api-key
+      - name: config-analytics
+        configMap:
+          name: config-analytics

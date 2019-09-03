@@ -28,7 +28,7 @@ namespace Party
             IAnalyticsSender analytics)
         {
             _memoryStoreClientManager = memoryStoreClientManager;
-            _analytics = analytics.WithEventClass("gateway_party");
+            _analytics = analytics.WithEventClass("party");
         }
 
         public override Task<CreatePartyResponse> CreateParty(CreatePartyRequest request, ServerCallContext context)

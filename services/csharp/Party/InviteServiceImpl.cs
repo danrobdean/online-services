@@ -25,7 +25,7 @@ namespace Party
             IAnalyticsSender analytics)
         {
             _memoryStoreClientManager = memoryStoreClientManager;
-            _analytics = analytics.WithEventClass("gateway_invite");
+            _analytics = analytics.WithEventClass("invite");
         }
 
         public override async Task<CreateInviteResponse> CreateInvite(CreateInviteRequest request,
