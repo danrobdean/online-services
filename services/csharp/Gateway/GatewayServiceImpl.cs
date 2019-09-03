@@ -18,10 +18,12 @@ namespace Gateway
     public class GatewayServiceImpl : GatewayService.GatewayServiceBase
     {
         private readonly IMemoryStoreClientManager<IMemoryStoreClient> _memoryStoreClientManager;
+        private readonly AnalyticsSenderClassWrapper _analytics;
 
-        public GatewayServiceImpl(IMemoryStoreClientManager<IMemoryStoreClient> memoryStoreClientManager, IAnalyticsSender analyticsSender)
+        public GatewayServiceImpl(IMemoryStoreClientManager<IMemoryStoreClient> memoryStoreClientManager, IAnalyticsSender analytics)
         {
             _memoryStoreClientManager = memoryStoreClientManager;
+            _analytics = analytics.WithEventClass("gateway_gateway");
         }
 
         public override async Task<Operation> Join(JoinRequestProto request, ServerCallContext context)
@@ -60,6 +62,26 @@ namespace Gateway
                         tx.UpdateAll(party.Yield());
                         tx.CreateAll(entriesToCreate);
                         tx.EnqueueAll(partyJoinRequest.Yield());
+                    }
+
+                    _analytics.Send("party_joined_match_queue", new Dictionary<string, string>
+                    {
+                        { "playerId", playerIdentifier },
+                        { "partyId", party.Id },
+                        { "queueType", request.MatchmakingType },
+                        { "currentPhase", party.CurrentPhase.ToString() }
+                    });
+
+                    foreach (var m in party.GetMembers())
+                    {
+                        _analytics.Send(
+                            "player_joined_match_queue", new Dictionary<string, string>
+                            {
+                                { "playerId", m.Id },
+                                { "partyId", party.Id },
+                                { "queueType", request.MatchmakingType },
+                                { "currentPhase", party.CurrentPhase.ToString() }
+                            });
                     }
                 }
                 catch (EntryNotFoundException)

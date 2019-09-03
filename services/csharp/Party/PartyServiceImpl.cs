@@ -55,11 +55,16 @@ namespace Party
                 transaction.CreateAll(new List<Entry> { party, leader });
             }
 
-            _analytics.Send("player_created_party", new Dictionary<string, string>
+            string[] eventTypes = { "player_created_party", "player_joined_party" };
+            foreach (string eventType in eventTypes)
             {
-                { "playerId", playerId },
-                { "partyId", party.Id },
-            });
+              _analytics.Send(eventType, new Dictionary<string, string>
+              {
+                  { "playerId", playerId },
+                  { "partyId", party.Id },
+                  { "currentPhase", party.CurrentPhase.ToString() }
+              });
+            }
 
             return Task.FromResult(new CreatePartyResponse { PartyId = party.Id });
         }
@@ -116,21 +121,21 @@ namespace Party
                     throw new TransactionAbortedException();
                 }
 
-                foreach (var m in party.GetMembers())
-                {
-                    _analytics.Send(
-                        "player_left_cancelled_party", new Dictionary<string, string>
-                        {
-                            { "playerId", playerId },
-                            { "partyId", party.Id }
-                        });
-                }
-
                 _analytics.Send("player_cancelled_party", new Dictionary<string, string>
                 {
                     { "playerId", playerId },
                     { "partyId", party.Id }
                 });
+
+                foreach (var m in party.GetMembers())
+                {
+                    _analytics.Send(
+                        "player_left_cancelled_party", new Dictionary<string, string>
+                        {
+                            { "playerId", m.Id },
+                            { "partyId", party.Id }
+                        });
+                }
             }
 
             return new DeletePartyResponse();
@@ -220,6 +225,7 @@ namespace Party
                 {
                     { "playerId", playerId },
                     { "partyId", partyToJoin.Id },
+                    { "currentPhase", partyToJoin.CurrentPhase.ToString() },
                     {
                         "invites", invites.Select(invite => new Dictionary<string, string>
                         {
@@ -408,7 +414,8 @@ namespace Party
                         {
                             { "partyLeaderId", updatedParty.LeaderPlayerId },
                             { "maxMembers", updatedParty.MaxMembers },
-                            { "minMembers", updatedParty.MinMembers }
+                            { "minMembers", updatedParty.MinMembers },
+                            { "currentPhase", updatedParty.CurrentPhase.ToString() }
                         }
                     }
                 });
