@@ -35,6 +35,9 @@ namespace Improbable.OnlineServices.SampleMatcher
                 });
                 Console.WriteLine($"Fetched {resp.Parties.Count} from gateway");
 
+                // LOEK - Trigger MATCHING event // this will be deliberately low context
+                // as developers will write their own matching logic..
+
                 foreach (var party in resp.Parties)
                 {
                     Console.WriteLine("Attempting to match a retrieved party.");
@@ -50,7 +53,7 @@ namespace Improbable.OnlineServices.SampleMatcher
                             Result = Assignment.Types.Result.Matched,
                             Party = party.Party
                         });
-                        MarkDeploymentAsInUse(deploymentServiceClient, deployment);
+                        MarkDeploymentAsInUse(deploymentServiceClient, deployment); // LOEK - TRIGGER DEPLOYMENT POOL EVENT
                         gatewayClient.AssignDeployments(assignRequest);
                     }
                     else

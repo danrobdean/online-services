@@ -60,10 +60,9 @@ namespace Party
             {
               _analytics.Send(eventType, new Dictionary<string, string>
               {
-                  { "playerId", playerId },
                   { "partyId", party.Id },
                   { "currentPhase", party.CurrentPhase.ToString() }
-              });
+              }, playerId);
             }
 
             return Task.FromResult(new CreatePartyResponse { PartyId = party.Id });
@@ -123,18 +122,16 @@ namespace Party
 
                 _analytics.Send("player_cancelled_party", new Dictionary<string, string>
                 {
-                    { "playerId", playerId },
                     { "partyId", party.Id }
-                });
+                }, playerId);
 
                 foreach (var m in party.GetMembers())
                 {
                     _analytics.Send(
                         "player_left_cancelled_party", new Dictionary<string, string>
                         {
-                            { "playerId", m.Id },
                             { "partyId", party.Id }
-                        });
+                        }, m.Id);
                 }
             }
 
@@ -223,7 +220,6 @@ namespace Party
 
                 _analytics.Send("player_joined_party", new Dictionary<string, object>
                 {
-                    { "playerId", playerId },
                     { "partyId", partyToJoin.Id },
                     { "currentPhase", partyToJoin.CurrentPhase.ToString() },
                     {
@@ -233,7 +229,7 @@ namespace Party
                             { "playerIdInviter", invite.SenderId }
                         })
                     }
-                });
+                }, playerId);
 
                 return new JoinPartyResponse { Party = ConvertToProto(partyToJoin) };
             }
@@ -311,10 +307,9 @@ namespace Party
 
                 _analytics.Send("player_kicked_from_party", new Dictionary<string, string>
                 {
-                    { "playerId", evicted.Id },
                     { "partyId", party.Id },
                     { "playerIdKicker", playerId }
-                });
+                }, evicted.Id);
             }
 
             return new KickOutPlayerResponse();
@@ -357,9 +352,8 @@ namespace Party
 
                 _analytics.Send("player_left_party", new Dictionary<string, string>
                 {
-                    { "playerId", playerId },
                     { "partyId", party.Id }
-                });
+                }, playerId);
             }
         }
 
@@ -407,7 +401,6 @@ namespace Party
 
                 _analytics.Send("player_updated_party", new Dictionary<string, object>
                 {
-                    { "playerId", playerId },
                     { "partyId", party.Id },
                     {
                         "newPartyState", new Dictionary<string, object>
@@ -418,7 +411,7 @@ namespace Party
                             { "currentPhase", updatedParty.CurrentPhase.ToString() }
                         }
                     }
-                });
+                }, playerId);
 
                 return new UpdatePartyResponse { Party = ConvertToProto(party) };
             }

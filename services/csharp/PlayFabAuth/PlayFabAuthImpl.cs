@@ -55,14 +55,13 @@ namespace PlayFabAuth
                         ProjectName = _project
                     }
                 );
-                
-                _analytics.Send("playfab_token_exchanged", new Dictionary<string, string>
+
+                _analytics.Send("token_exchanged", new Dictionary<string, string>
                 {
-                    { "playerId", userInfo.PlayFabId },
-                    { "provider", "playfab" },
+                    { "provider", "PlayFab" },
                     { "spatialProject", _project }
-                });
-                
+                }, userInfo.PlayFabId);
+
                 return Task.FromResult(new ExchangePlayFabTokenResponse
                 { PlayerIdentityToken = playerIdentityToken.PlayerIdentityToken });
             }

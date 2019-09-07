@@ -47,7 +47,6 @@ namespace Gateway
             ThreadPool.GetMaxThreads(out var workerThreads, out var ioThreads);
             ThreadPool.SetMinThreads(workerThreads, ioThreads);
 
-
             Parser.Default.ParseArguments<GatewayArgs>(args)
                 .WithParsed(parsedArgs =>
                 {
@@ -72,7 +71,7 @@ namespace Gateway
                     server.AddService(
                         GatewayService.BindService(new GatewayServiceImpl(memoryStoreClientManager, analyticsSender)));
                     server.AddService(
-                        Operations.BindService(new OperationsServiceImpl(memoryStoreClientManager, playerAuthClient)));
+                        Operations.BindService(new OperationsServiceImpl(memoryStoreClientManager, playerAuthClient, analyticsSender)));
 
                     var serverTask = Task.Run(() => server.Start());
                     var signalTask = Task.Run(() => UnixSignal.WaitAny(new[] { new UnixSignal(Signum.SIGINT), new UnixSignal(Signum.SIGTERM) }));

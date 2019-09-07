@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Google.LongRunning;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Improbable.OnlineServices.Common;
+using Improbable.OnlineServices.Common.Analytics;
 using Improbable.OnlineServices.DataModel;
 using Improbable.OnlineServices.DataModel.Gateway;
 using Improbable.OnlineServices.DataModel.Party;
@@ -20,13 +22,14 @@ namespace Gateway
     {
         private readonly IMemoryStoreClientManager<IMemoryStoreClient> _memoryStoreClientManager;
         private readonly PlayerAuthServiceClient _playerAuthServiceClient;
+        private readonly AnalyticsSenderClassWrapper _analytics;
 
-        public OperationsServiceImpl(
-            IMemoryStoreClientManager<IMemoryStoreClient> memoryStoreClientManager,
-            PlayerAuthServiceClient playerAuthServiceClient)
+        public OperationsServiceImpl(IMemoryStoreClientManager<IMemoryStoreClient> memoryStoreClientManager,
+            PlayerAuthServiceClient playerAuthServiceClient, IAnalyticsSender analytics)
         {
             _memoryStoreClientManager = memoryStoreClientManager;
             _playerAuthServiceClient = playerAuthServiceClient;
+            _analytics = analytics.WithEventClass("match");
         }
 
         public override async Task<Operation> GetOperation(GetOperationRequest request, ServerCallContext context)
@@ -143,6 +146,26 @@ namespace Gateway
                     }
 
                     Reporter.CancelOperationInc();
+
+                    _analytics.Send("party_match_request_cancelled", new Dictionary<string, string>
+                    {
+                        { "partyId", partyJoinRequest.Id },
+                        { "matchRequestId", partyJoinRequest.MatchRequestId },
+                        { "queueType", partyJoinRequest.Type },
+                        { "currentPhase", partyJoinRequest.Party.CurrentPhase.ToString() }
+                    }, partyJoinRequest.Party.LeaderPlayerId);
+
+                    foreach (var playerJoinRequest in toDelete.OfType<PlayerJoinRequest>())
+                    {
+                        _analytics.Send("player_left_cancelled_match_request", new Dictionary<string, string>
+                        {
+                            { "partyId", playerJoinRequest.PartyId },
+                            { "matchRequestId", playerJoinRequest.MatchRequestId },
+                            { "queueType", playerJoinRequest.Type },
+                            { "playerState", playerJoinRequest.State.ToString() }
+                        }, playerJoinRequest.Id);
+                    }
+
                     return new Empty();
                 }
                 catch (EntryNotFoundException exception)

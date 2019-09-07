@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Google.LongRunning;
 using Grpc.Core;
@@ -18,12 +19,13 @@ namespace Gateway
     public class GatewayServiceImpl : GatewayService.GatewayServiceBase
     {
         private readonly IMemoryStoreClientManager<IMemoryStoreClient> _memoryStoreClientManager;
-        private readonly AnalyticsSenderClassWrapper _analytics;
+        private static AnalyticsSenderClassWrapper _analytics;
 
-        public GatewayServiceImpl(IMemoryStoreClientManager<IMemoryStoreClient> memoryStoreClientManager, IAnalyticsSender analytics)
+        public GatewayServiceImpl(IMemoryStoreClientManager<IMemoryStoreClient> memoryStoreClientManager,
+            IAnalyticsSender analytics)
         {
             _memoryStoreClientManager = memoryStoreClientManager;
-            _analytics = analytics.WithEventClass("gateway");
+            _analytics = analytics.WithEventClass("match");
         }
 
         public override async Task<Operation> Join(JoinRequestProto request, ServerCallContext context)
@@ -53,9 +55,9 @@ namespace Gateway
 
                     var matchmakingMetadata = new Dictionary<string, string>(request.Metadata);
                     var partyJoinRequest = new PartyJoinRequest(party, request.MatchmakingType, matchmakingMetadata);
-                    var entriesToCreate = new List<Entry> { partyJoinRequest };
+                    var entriesToCreate = new List<Entry> {partyJoinRequest};
                     entriesToCreate.AddRange(CreateJoinRequestsForEachMember(party, request.MatchmakingType,
-                        matchmakingMetadata));
+                        partyJoinRequest.MatchRequestId, partyJoinRequest.Id, matchmakingMetadata));
 
                     using (var tx = memClient.CreateTransaction())
                     {
@@ -66,24 +68,25 @@ namespace Gateway
 
                     _analytics.Send("party_joined_match_queue", new Dictionary<string, string>
                     {
-                        { "playerId", playerIdentifier },
-                        { "partyId", party.Id },
-                        { "queueType", request.MatchmakingType },
-                        { "currentPhase", party.CurrentPhase.ToString() }
-                    });
+                        { "partyId", partyJoinRequest.Id },
+                        { "matchRequestId", partyJoinRequest.MatchRequestId },
+                        { "queueType", partyJoinRequest.Type },
+                        { "currentPhase", partyJoinRequest.Party.CurrentPhase.ToString() }
+                    }, partyJoinRequest.Party.LeaderPlayerId);
 
-                    foreach (var m in party.GetMembers())
+                    foreach (var playerJoinRequest in entriesToCreate.OfType<PlayerJoinRequest>())
                     {
                         _analytics.Send(
                             "player_joined_match_queue", new Dictionary<string, string>
                             {
-                                { "playerId", m.Id },
-                                { "partyId", party.Id },
-                                { "queueType", request.MatchmakingType },
-                                { "currentPhase", party.CurrentPhase.ToString() }
-                            });
+                                { "partyId", playerJoinRequest.PartyId },
+                                { "matchRequestId", playerJoinRequest.MatchRequestId },
+                                { "queueType", playerJoinRequest.Type },
+                                { "playerState", playerJoinRequest.State.ToString() }
+                            }, playerJoinRequest.Id);
                     }
                 }
+
                 catch (EntryNotFoundException)
                 {
                     Log.Information("Player is not a member of any party");
@@ -125,12 +128,12 @@ namespace Gateway
         }
 
         private static IEnumerable<PlayerJoinRequest> CreateJoinRequestsForEachMember(PartyDataModel party,
-            string matchmakingType, Dictionary<string, string> matchmakingMetadata)
+            string matchmakingType, string matchRequestId, string partyId, Dictionary<string, string> matchmakingMetadata)
         {
             var entriesToCreate = new List<PlayerJoinRequest>();
             foreach (var (memberId, memberPit) in party.MemberIdToPit)
             {
-                entriesToCreate.Add(new PlayerJoinRequest(memberId, memberPit, matchmakingType, matchmakingMetadata));
+                entriesToCreate.Add(new PlayerJoinRequest(memberId, memberPit, matchmakingType, matchRequestId, partyId, matchmakingMetadata));
             }
 
             return entriesToCreate;

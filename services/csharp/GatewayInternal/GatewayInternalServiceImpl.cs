@@ -91,6 +91,10 @@ namespace GatewayInternal
                         tx.EnqueueAll(toRequeue);
                         tx.DeleteAll(toDelete);
                     }
+
+                    // LOEK - Combine toUpdate & toDelete (or do party separately), loop over list..
+                    // send events using eventType = $"player_{assignment.Result.ToString()}"
+                    // If MATCHED -> capture deployment_name & deployment_id
                 }
             }
             catch (EntryNotFoundException e)
