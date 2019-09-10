@@ -22,10 +22,10 @@ namespace Gateway
         private static AnalyticsSenderClassWrapper _analytics;
 
         public GatewayServiceImpl(IMemoryStoreClientManager<IMemoryStoreClient> memoryStoreClientManager,
-            IAnalyticsSender analytics)
+            IAnalyticsSender analytics = null)
         {
             _memoryStoreClientManager = memoryStoreClientManager;
-            _analytics = analytics.WithEventClass("match");
+            _analytics = (analytics ?? new NullAnalyticsSender()).WithEventClass("match");
         }
 
         public override async Task<Operation> Join(JoinRequestProto request, ServerCallContext context)
@@ -82,7 +82,7 @@ namespace Gateway
                                 { "partyId", playerJoinRequest.PartyId },
                                 { "matchRequestId", playerJoinRequest.MatchRequestId },
                                 { "queueType", playerJoinRequest.Type },
-                                { "playerState", playerJoinRequest.State.ToString() }
+                                { "playerJoinRequestState", playerJoinRequest.State.ToString() }
                             }, playerJoinRequest.Id);
                     }
                 }

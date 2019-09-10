@@ -42,7 +42,7 @@ namespace GatewayInternal
                         .WriteTo.Console(new RenderedCompactJsonFormatter())
                         .Enrich.FromLogContext()
                         .CreateLogger();
-                    
+
                     IAnalyticsSender analyticsSender = new AnalyticsSenderBuilder("gateway_internal")
                         .WithCommandLineArgs(parsedArgs)
                         .With(new LogExceptionStrategy(Log.Logger))

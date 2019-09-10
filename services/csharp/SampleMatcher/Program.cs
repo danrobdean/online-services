@@ -24,20 +24,20 @@ namespace Improbable.OnlineServices.SampleMatcher
     {
         static void Main(string[] args)
         {
-            // Log.Logger = new LoggerConfiguration()
-            //     .WriteTo.Console(new RenderedCompactJsonFormatter())
-            //     .Enrich.FromLogContext()
-            //     .CreateLogger();
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.Console(new RenderedCompactJsonFormatter())
+                .Enrich.FromLogContext()
+                .CreateLogger();
 
             Parser.Default.ParseArguments<MatcherArgs>(args)
                 .WithParsed(parsedArgs =>
                 {
                     IAnalyticsSender analyticsSender = new AnalyticsSenderBuilder("gateway_matcher")
                         .WithCommandLineArgs(parsedArgs)
-                        // .With(new LogExceptionStrategy(Log.Logger))
+                        .With(new LogExceptionStrategy(Log.Logger))
                         .Build();
 
-                    var matcher = new Matcher();
+                    var matcher = new Matcher(analyticsSender);
                     var matcherTask = new Task(() => { matcher.Start(); });
                     var unixSignalTask = new Task<int>(() =>
                     {

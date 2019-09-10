@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Grpc.Core;
+using Improbable.OnlineServices.Common.Analytics;
 using Improbable.OnlineServices.Proto.Gateway;
 using Improbable.SpatialOS.Deployment.V1Alpha1;
 
@@ -16,11 +17,13 @@ namespace Improbable.OnlineServices.SampleMatcher
         private readonly string _tag;
         private readonly string ReadyTag = "ready"; // This should be the same tag a DeploymentPool looks for.
         private readonly string InUseTag = "in_use";
+        private static IAnalyticsSender _analytics;
 
-        public Matcher()
+        public Matcher(IAnalyticsSender analytics = null)
         {
             _project = Environment.GetEnvironmentVariable("SPATIAL_PROJECT");
             _tag = Environment.GetEnvironmentVariable("MATCH_TAG") ?? DefaultMatchTag;
+            _analytics = analytics ?? new NullAnalyticsSender();
         }
 
         protected override void DoMatch(GatewayInternalService.GatewayInternalServiceClient gatewayClient,
@@ -35,14 +38,27 @@ namespace Improbable.OnlineServices.SampleMatcher
                 });
                 Console.WriteLine($"Fetched {resp.Parties.Count} from gateway");
 
-                // LOEK - Trigger MATCHING event // this will be deliberately low context
-                // as developers will write their own matching logic..
-
                 foreach (var party in resp.Parties)
                 {
                     Console.WriteLine("Attempting to match a retrieved party.");
+                    _analytics.Send("match", "party_matching", new Dictionary<string, string>
+                    {
+                        { "partyId", party.Party.Id },
+                        { "queueType", _tag },
+                        { "partyPhase", party.Party.CurrentPhase.ToString() }
+                        // { "matchRequestId", party.Party.MatchRequestId } // Todo: Add to party.proto definition
+                    });
 
-                    _analytics.Send()
+                    foreach (var memberId in party.Party.MemberIds)
+                    {
+                        _analytics.Send("match", "player_matching", new Dictionary<string, string>
+                        {
+                            { "partyId", party.Party.Id },
+                            { "queueType", _tag },
+                            { "playerJoinRequestState", "Matching" },
+                            // { "matchRequestId", party.Party.MatchRequestId } // Todo: Add to party.proto definition
+                        }, memberId);
+                    }
 
                     var deployment = GetDeploymentWithTag(deploymentServiceClient, _tag);
                     if (deployment != null)
@@ -56,7 +72,13 @@ namespace Improbable.OnlineServices.SampleMatcher
                             Result = Assignment.Types.Result.Matched,
                             Party = party.Party
                         });
-                        MarkDeploymentAsInUse(deploymentServiceClient, deployment); // LOEK - TRIGGER DEPLOYMENT POOL EVENT
+                        MarkDeploymentAsInUse(deploymentServiceClient, deployment);
+                        _analytics.Send("deployment_state_change", "deployment_in_use", new Dictionary<string, string>
+                        {
+                            { "spatialProjectId", _project },
+                            { "deploymentName", deployment.Name },
+                            { "deploymentId", deployment.Id }
+                        });
                         gatewayClient.AssignDeployments(assignRequest);
                     }
                     else

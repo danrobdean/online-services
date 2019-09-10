@@ -25,10 +25,10 @@ namespace Party
         private readonly AnalyticsSenderClassWrapper _analytics;
 
         public PartyServiceImpl(IMemoryStoreClientManager<IMemoryStoreClient> memoryStoreClientManager,
-            IAnalyticsSender analytics)
+            IAnalyticsSender analytics = null)
         {
             _memoryStoreClientManager = memoryStoreClientManager;
-            _analytics = analytics.WithEventClass("party");
+            _analytics = (analytics ?? new NullAnalyticsSender()).WithEventClass("party");
         }
 
         public override Task<CreatePartyResponse> CreateParty(CreatePartyRequest request, ServerCallContext context)
@@ -55,14 +55,22 @@ namespace Party
                 transaction.CreateAll(new List<Entry> { party, leader });
             }
 
-            string[] eventTypes = { "player_created_party", "player_joined_party" };
+            IDictionary<string, string> eventAttributes = new Dictionary<string, string>
+            {
+                { "partyId", party.Id }
+            };
+            string[] eventTypes = { "player_created_party", "player_joined_party", "party_created" };
             foreach (string eventType in eventTypes)
             {
-              _analytics.Send(eventType, new Dictionary<string, string>
-              {
-                  { "partyId", party.Id },
-                  { "currentPhase", party.CurrentPhase.ToString() }
-              }, playerId);
+                if (eventType == "party_created")
+                {
+                    eventAttributes.Add(new KeyValuePair<string, string>("partyPhase", party.CurrentPhase.ToString()));
+                    _analytics.Send(eventType, (Dictionary<string, string>) eventAttributes, playerId);
+                }
+                else
+                {
+                    _analytics.Send(eventType, (Dictionary<string, string>) eventAttributes, playerId);
+                }
             }
 
             return Task.FromResult(new CreatePartyResponse { PartyId = party.Id });
@@ -398,20 +406,32 @@ namespace Party
                 {
                     transaction.UpdateAll(new List<Entry> { party });
                 }
-
-                _analytics.Send("player_updated_party", new Dictionary<string, object>
+                
+                IDictionary<string, object> eventAttributes = new Dictionary<string, object>
                 {
-                    { "partyId", party.Id },
+                    { "partyId", updatedParty.Id },
                     {
                         "newPartyState", new Dictionary<string, object>
                         {
                             { "partyLeaderId", updatedParty.LeaderPlayerId },
                             { "maxMembers", updatedParty.MaxMembers },
-                            { "minMembers", updatedParty.MinMembers },
-                            { "currentPhase", updatedParty.CurrentPhase.ToString() }
+                            { "minMembers", updatedParty.MinMembers }
                         }
                     }
-                }, playerId);
+                };
+                string[] eventTypes = { "player_updated_party", "party_updated" };
+                foreach (string eventType in eventTypes)
+                {
+                    if (eventType == "party_updated")
+                    {
+                        eventAttributes.Add(new KeyValuePair<string, object>("partyPhase", updatedParty.CurrentPhase.ToString()));
+                        _analytics.Send(eventType, (Dictionary<string, object>) eventAttributes, playerId);
+                    }
+                    else
+                    {
+                        _analytics.Send(eventType, (Dictionary<string, object>) eventAttributes, playerId);
+                    }
+                }
 
                 return new UpdatePartyResponse { Party = ConvertToProto(party) };
             }

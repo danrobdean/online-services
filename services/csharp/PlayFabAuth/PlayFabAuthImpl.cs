@@ -17,11 +17,11 @@ namespace PlayFabAuth
         private readonly PlayerAuthServiceClient _authServiceClient;
         private readonly AnalyticsSenderClassWrapper _analytics;
 
-        public PlayFabAuthImpl(string project, PlayerAuthServiceClient authServiceClient, IAnalyticsSender analytics)
+        public PlayFabAuthImpl(string project, PlayerAuthServiceClient authServiceClient, IAnalyticsSender analytics = null)
         {
             _project = project;
             _authServiceClient = authServiceClient;
-            _analytics = analytics.WithEventClass("authentication");
+            _analytics = (analytics ?? new NullAnalyticsSender()).WithEventClass("authentication");
         }
 
         public override Task<ExchangePlayFabTokenResponse> ExchangePlayFabToken(ExchangePlayFabTokenRequest request,
@@ -59,7 +59,7 @@ namespace PlayFabAuth
                 _analytics.Send("player_token_exchanged", new Dictionary<string, string>
                 {
                     { "provider", "PlayFab" },
-                    { "spatialProject", _project }
+                    { "spatialProjectId", _project }
                 }, userInfo.PlayFabId);
 
                 return Task.FromResult(new ExchangePlayFabTokenResponse

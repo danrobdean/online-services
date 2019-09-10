@@ -25,11 +25,11 @@ namespace Gateway
         private readonly AnalyticsSenderClassWrapper _analytics;
 
         public OperationsServiceImpl(IMemoryStoreClientManager<IMemoryStoreClient> memoryStoreClientManager,
-            PlayerAuthServiceClient playerAuthServiceClient, IAnalyticsSender analytics)
+            PlayerAuthServiceClient playerAuthServiceClient, IAnalyticsSender analytics = null)
         {
             _memoryStoreClientManager = memoryStoreClientManager;
             _playerAuthServiceClient = playerAuthServiceClient;
-            _analytics = analytics.WithEventClass("match");
+            _analytics = (analytics ?? new NullAnalyticsSender()).WithEventClass("match");
         }
 
         public override async Task<Operation> GetOperation(GetOperationRequest request, ServerCallContext context)
@@ -146,14 +146,26 @@ namespace Gateway
                     }
 
                     Reporter.CancelOperationInc();
-
-                    _analytics.Send("party_match_request_cancelled", new Dictionary<string, string>
+                    
+                    IDictionary<string, string> eventAttributes = new Dictionary<string, string>
                     {
                         { "partyId", partyJoinRequest.Id },
                         { "matchRequestId", partyJoinRequest.MatchRequestId },
-                        { "queueType", partyJoinRequest.Type },
-                        { "partyPhase", partyJoinRequest.Party.CurrentPhase.ToString() }
-                    }, partyJoinRequest.Party.LeaderPlayerId);
+                        { "queueType", partyJoinRequest.Type }
+                    };
+                    string[] eventTypes = { "party_match_request_cancelled", "player_cancels_match_request" };
+                    foreach (string eventType in eventTypes)
+                    {
+                        if (eventType == "party_match_request_cancelled")
+                        {
+                            eventAttributes.Add(new KeyValuePair<string, string>("partyPhase", "Forming")); // Todo: Update currentPhase of Party with a tx
+                            _analytics.Send(eventType, (Dictionary<string, string>) eventAttributes, partyJoinRequest.Party.LeaderPlayerId);
+                        }
+                        else
+                        {
+                            _analytics.Send(eventType, (Dictionary<string, string>) eventAttributes, partyJoinRequest.Party.LeaderPlayerId);
+                        }
+                    }
 
                     foreach (var playerJoinRequest in toDelete.OfType<PlayerJoinRequest>())
                     {
@@ -161,8 +173,7 @@ namespace Gateway
                         {
                             { "partyId", playerJoinRequest.PartyId },
                             { "matchRequestId", playerJoinRequest.MatchRequestId },
-                            { "queueType", playerJoinRequest.Type },
-                            { "playerState", playerJoinRequest.State.ToString() }
+                            { "queueType", playerJoinRequest.Type }
                         }, playerJoinRequest.Id);
                     }
 

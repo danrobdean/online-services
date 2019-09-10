@@ -20,6 +20,7 @@ message Party {
     repeated string memberIds = 5;
     map<string, string> metadata = 6;
     Phase current_phase = 7;
+    // Todo: string match_request_id = 8;
 }
 
 message CreatePartyRequest {
@@ -111,8 +112,8 @@ service PartyService {
             post: "/v1/kick_out_player/{evicted_player_id}"
         };
     }
-   
-    // Does not update the member list of the party. Modifications to the member list can be made using 
+
+    // Does not update the member list of the party. Modifications to the member list can be made using
     // Join/Leave/KickOut.
     rpc UpdateParty (UpdatePartyRequest) returns (UpdatePartyResponse) {
         option (google.api.http) = {

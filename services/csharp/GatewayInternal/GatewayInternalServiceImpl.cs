@@ -20,12 +20,15 @@ namespace GatewayInternal
     {
         private readonly IMemoryStoreClientManager<IMemoryStoreClient> _matchmakingMemoryStoreClientManager;
         private static AnalyticsSenderClassWrapper _analytics;
+        private readonly string _project;
 
         public GatewayInternalServiceImpl(
-            IMemoryStoreClientManager<IMemoryStoreClient> matchmakingMemoryStoreClientManager, IAnalyticsSender analytics)
+            IMemoryStoreClientManager<IMemoryStoreClient> matchmakingMemoryStoreClientManager,
+            IAnalyticsSender analytics = null)
         {
             _matchmakingMemoryStoreClientManager = matchmakingMemoryStoreClientManager;
-            _analytics = analytics.WithEventClass("match");
+            _project = Environment.GetEnvironmentVariable("SPATIAL_PROJECT");
+            _analytics = (analytics ?? new NullAnalyticsSender()).WithEventClass("match");
         }
 
         public override async Task<AssignDeploymentsResponse> AssignDeployments(AssignDeploymentsRequest request,
@@ -70,21 +73,44 @@ namespace GatewayInternal
                     {
                         var party = assignment.Party;
                         var partyJoinRequest = await memClient.GetAsync<PartyJoinRequest>(party.Id);
+
                         if (partyJoinRequest == null)
                         {
                             // Party join request has been cancelled.
                             continue;
                         }
-                        if (assignment.Result == Assignment.Types.Result.Requeued)
+
+                        IDictionary<string, string> eventAttributes = new Dictionary<string, string>
+                        {
+                            { "partyId", partyJoinRequest.Id },
+                            { "matchRequestId", partyJoinRequest.MatchRequestId },
+                            { "queueType", partyJoinRequest.Type },
+                            { "partyPhase", partyJoinRequest.Party.CurrentPhase.ToString() }
+                        };
+                        
+                        if (assignment.Result == Assignment.Types.Result.Matched)
                         {
                             partyJoinRequest.RefreshQueueData();
                             toRequeue.Add(partyJoinRequest);
                             toUpdate.Add(partyJoinRequest);
+
+                            eventAttributes.Add(new KeyValuePair<string, string>("spatialProjectId", _project));
+                            eventAttributes.Add(new KeyValuePair<string, string>("deploymentName", assignment.DeploymentName));
+                            eventAttributes.Add(new KeyValuePair<string, string>("deploymentId", assignment.DeploymentId ));
+                            _analytics.Send("party_matched", (Dictionary<string, string>) eventAttributes, partyJoinRequest.Party.LeaderPlayerId);
+                        }
+                        else if (assignment.Result == Assignment.Types.Result.Requeued)
+                        {
+                            toDelete.Add(partyJoinRequest);
+                            _analytics.Send("party_requeued", (Dictionary<string, string>) eventAttributes, partyJoinRequest.Party.LeaderPlayerId);
+                        }
+                        else if (assignment.Result == Assignment.Types.Result.Error)
+                        {
+                            toDelete.Add(partyJoinRequest);
+                            _analytics.Send("party_error", (Dictionary<string, string>) eventAttributes, partyJoinRequest.Party.LeaderPlayerId);
                         }
                         else
                         {
-                            // If the matchmaking process for this party has reached a final state, we should delete the
-                            // PartyJoinRequest associated to it.
                             toDelete.Add(partyJoinRequest);
                         }
                     }
@@ -96,24 +122,6 @@ namespace GatewayInternal
                         tx.DeleteAll(toDelete);
                     }
 
-                    // foreach (var partyJoinRequest in toRequeue.Concat(toDelete)) // Loop over assignments instead..
-                    // {
-                    //     // LOEK - Combine toRequeue & toDelete (or do party separately), loop over list..
-                    //     // send events using eventType = $"player_{assignment.Result.ToString()}"
-                    //     // If MATCHED -> capture deployment_name & deployment_id
-                    //
-                    //     IDictionary<string, string> eventAttributes = new Dictionary<string, string>
-                    //     {
-                    //         { "partyId", partyJoinRequest.Id },
-                    //         { "matchRequestId", partyJoinRequest.MatchRequestId },
-                    //         { "queueType", partyJoinRequest.Type },
-                    //         { "partyPhase", partyJoinRequest.Party.CurrentPhase.ToString() }
-                    //     };
-                    //
-                    //
-                    //     _analytics.Send();
-                    // }
-
                     foreach (var playerJoinRequest in toUpdate.OfType<PlayerJoinRequest>())
                     {
                         IDictionary<string, string> eventAttributes = new Dictionary<string, string>
@@ -121,12 +129,13 @@ namespace GatewayInternal
                             { "partyId", playerJoinRequest.PartyId },
                             { "matchRequestId", playerJoinRequest.MatchRequestId },
                             { "queueType", playerJoinRequest.Type },
-                            { "playerState", playerJoinRequest.State.ToString() }
+                            { "playerJoinRequestState", playerJoinRequest.State.ToString() }
                         };
 
                         switch (playerJoinRequest.State)
                         {
                             case MatchState.Matched:
+                                eventAttributes.Add(new KeyValuePair<string, string>("spatialProjectId", _project));
                                 eventAttributes.Add(new KeyValuePair<string, string>("deploymentName", playerJoinRequest.DeploymentName));
                                 eventAttributes.Add(new KeyValuePair<string, string>("deploymentId", playerJoinRequest.DeploymentId ));
                                 _analytics.Send("player_matched", (Dictionary<string, string>) eventAttributes, playerJoinRequest.Id);
