@@ -41,6 +41,9 @@ namespace Improbable.OnlineServices.SampleMatcher
                 foreach (var party in resp.Parties)
                 {
                     Console.WriteLine("Attempting to match a retrieved party.");
+
+                    _analytics.Send()
+
                     var deployment = GetDeploymentWithTag(deploymentServiceClient, _tag);
                     if (deployment != null)
                     {

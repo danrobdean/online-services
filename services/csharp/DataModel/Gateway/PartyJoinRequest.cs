@@ -23,9 +23,9 @@ namespace Improbable.OnlineServices.DataModel.Gateway
 
         [JsonConstructor]
         public PartyJoinRequest(string id, PartyDataModel party, string type, Dictionary<string, string> metadata,
-            string queueName, double score)
+            string queueName, double score, string matchRequestId = null)
         {
-            MatchRequestId = Guid.NewGuid().ToString();
+            MatchRequestId = matchRequestId ?? Guid.NewGuid().ToString();
             Id = party.Id;
             Party = party;
             Type = type;

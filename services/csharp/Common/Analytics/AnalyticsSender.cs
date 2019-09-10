@@ -108,15 +108,15 @@ namespace Improbable.OnlineServices.Common.Analytics
                 { "eventEnvironment", CanonicalEnvironment },
                 { "eventIndex", eventId.ToString() },
                 { "eventSource", _eventSource },
+                { "sessionId", _sessionId },
                 { "eventClass", eventClass },
                 { "eventType", eventType },
-                { "sessionId", _sessionId },
                 // TODO: Add versioning ability & resolve matching TODO in relevant unit tests
                 { "versionId", "0.2.0" },
                 { "eventTimestamp", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString() },
                 { "eventAttributes", JsonConvert.SerializeObject(eventAttributes) },
             };
-            if (!String.IsNullOrEmpty(playerId)) { 
+            if (!String.IsNullOrEmpty(playerId)) {
                 eventDict.Add(new KeyValuePair<string, string>("playerId", playerId));
             }
             return (Dictionary<string, string>) eventDict;

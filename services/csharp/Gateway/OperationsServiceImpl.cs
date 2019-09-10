@@ -152,7 +152,7 @@ namespace Gateway
                         { "partyId", partyJoinRequest.Id },
                         { "matchRequestId", partyJoinRequest.MatchRequestId },
                         { "queueType", partyJoinRequest.Type },
-                        { "currentPhase", partyJoinRequest.Party.CurrentPhase.ToString() }
+                        { "partyPhase", partyJoinRequest.Party.CurrentPhase.ToString() }
                     }, partyJoinRequest.Party.LeaderPlayerId);
 
                     foreach (var playerJoinRequest in toDelete.OfType<PlayerJoinRequest>())

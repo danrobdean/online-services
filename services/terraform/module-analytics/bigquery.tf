@@ -32,6 +32,30 @@ resource "google_bigquery_table" "table_events_gcs_external" {
   "description": "Environment derived from the GCS path."
 },
 {
+  "name": "eventEnvironment",
+  "type": "STRING",
+  "mode": "NULLABLE",
+  "description": "The environment the event originated from."
+},
+{
+  "name": "eventSource",
+  "type": "STRING",
+  "mode": "NULLABLE",
+  "description": "Type of the worker the event originated from."
+},
+{
+  "name": "sessionId",
+  "type": "STRING",
+  "mode": "NULLABLE",
+  "description": "The session ID, which is unique per client/server worker session."
+},
+{
+  "name": "versionId",
+  "type": "STRING",
+  "mode": "NULLABLE",
+  "description": "The version of the game build or online service."
+},
+{
   "name": "batchId",
   "type": "STRING",
   "mode": "NULLABLE",
@@ -50,12 +74,6 @@ resource "google_bigquery_table" "table_events_gcs_external" {
   "description": "The index of the event within its batch."
 },
 {
-  "name": "eventSource",
-  "type": "STRING",
-  "mode": "NULLABLE",
-  "description": "Type of the worker the event originated from."
-},
-{
   "name": "eventClass",
   "type": "STRING",
   "mode": "NULLABLE",
@@ -68,22 +86,10 @@ resource "google_bigquery_table" "table_events_gcs_external" {
   "description": "The event type."
 },
 {
-  "name": "sessionId",
+  "name": "playerId",
   "type": "STRING",
   "mode": "NULLABLE",
-  "description": "The session ID, which is unique per client/server worker session."
-},
-{
-  "name": "versionId",
-  "type": "STRING",
-  "mode": "NULLABLE",
-  "description": "The version of the game build or online service."
-},
-{
-  "name": "eventEnvironment",
-  "type": "STRING",
-  "mode": "NULLABLE",
-  "description": "The environment the event originated from."
+  "description": "A player's unique identifier, if available."
 },
 {
   "name": "eventTimestamp",
@@ -128,84 +134,90 @@ resource "google_bigquery_table" "table_events_gcs_external_os" {
 
   schema = <<EOF
 [
-{
-  "name": "analyticsEnvironment",
-  "type": "STRING",
-  "mode": "NULLABLE",
-  "description": "Environment derived from the GCS path."
-},
-{
-  "name": "batchId",
-  "type": "STRING",
-  "mode": "NULLABLE",
-  "description": "MD5 hash of the GCS filepath."
-},
-{
-  "name": "eventId",
-  "type": "STRING",
-  "mode": "NULLABLE",
-  "description": "MD5 hash of the GCS filepath + '/{event_index_in_batch}'."
-},
-{
-  "name": "eventIndex",
-  "type": "INTEGER",
-  "mode": "NULLABLE",
-  "description": "The index of the event within its batch."
-},
-{
-  "name": "eventSource",
-  "type": "STRING",
-  "mode": "NULLABLE",
-  "description": "Type of the worker the event originated from."
-},
-{
-  "name": "eventClass",
-  "type": "STRING",
-  "mode": "NULLABLE",
-  "description": "Higher order category of event type."
-},
-{
-  "name": "eventType",
-  "type": "STRING",
-  "mode": "NULLABLE",
-  "description": "The event type."
-},
-{
-  "name": "sessionId",
-  "type": "STRING",
-  "mode": "NULLABLE",
-  "description": "The session ID, which is unique per client/server worker session."
-},
-{
-  "name": "versionId",
-  "type": "STRING",
-  "mode": "NULLABLE",
-  "description": "The version of the game build or online service."
-},
-{
-  "name": "eventEnvironment",
-  "type": "STRING",
-  "mode": "NULLABLE",
-  "description": "The environment the event originated from."
-},
-{
-  "name": "eventTimestamp",
-  "type": "TIMESTAMP",
-  "mode": "NULLABLE",
-  "description": "The timestamp of the event."
-},
-{
-  "name": "receivedTimestamp",
-  "type": "TIMESTAMP",
-  "mode": "NULLABLE",
-  "description": "The timestamp of when the event was received."
-},
-{
-  "name": "eventAttributes",
-  "type": "STRING",
-  "mode": "NULLABLE",
-  "description": "Custom data for the event."
-}
+  {
+    "name": "analyticsEnvironment",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Environment derived from the GCS path."
+  },
+  {
+    "name": "eventEnvironment",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "The environment the event originated from."
+  },
+  {
+    "name": "eventSource",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Type of the worker the event originated from."
+  },
+  {
+    "name": "sessionId",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "The session ID, which is unique per client/server worker session."
+  },
+  {
+    "name": "versionId",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "The version of the game build or online service."
+  },
+  {
+    "name": "batchId",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "MD5 hash of the GCS filepath."
+  },
+  {
+    "name": "eventId",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "MD5 hash of the GCS filepath + '/{event_index_in_batch}'."
+  },
+  {
+    "name": "eventIndex",
+    "type": "INTEGER",
+    "mode": "NULLABLE",
+    "description": "The index of the event within its batch."
+  },
+  {
+    "name": "eventClass",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Higher order category of event type."
+  },
+  {
+    "name": "eventType",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "The event type."
+  },
+  {
+    "name": "playerId",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "A player's unique identifier, if available."
+  },
+  {
+    "name": "eventTimestamp",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE",
+    "description": "The timestamp of the event."
+  },
+  {
+    "name": "receivedTimestamp",
+    "type": "TIMESTAMP",
+    "mode": "NULLABLE",
+    "description": "The timestamp of when the event was received."
+  },
+  {
+    "name": "eventAttributes",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Custom data for the event."
+  }
 ]
 EOF
 }

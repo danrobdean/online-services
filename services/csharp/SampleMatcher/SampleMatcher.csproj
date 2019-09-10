@@ -6,8 +6,11 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
+    <PackageReference Include="Serilog.Formatting.Compact" Version="1.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Base.Matcher\Base.Matcher.csproj" />
+    <ProjectReference Include="..\Base.Server\Base.Server.csproj" />
+    <ProjectReference Include="..\Common\Common.csproj" />
   </ItemGroup>
 </Project>

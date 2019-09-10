@@ -56,7 +56,7 @@ namespace PlayFabAuth
                     }
                 );
 
-                _analytics.Send("token_exchanged", new Dictionary<string, string>
+                _analytics.Send("player_token_exchanged", new Dictionary<string, string>
                 {
                     { "provider", "PlayFab" },
                     { "spatialProject", _project }

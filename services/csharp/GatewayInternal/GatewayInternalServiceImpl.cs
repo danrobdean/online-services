@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Google.Protobuf;
 using Grpc.Core;
+using Improbable.OnlineServices.Common.Analytics;
 using Improbable.OnlineServices.DataModel;
 using Improbable.OnlineServices.DataModel.Gateway;
 using Improbable.OnlineServices.Proto.Gateway;
@@ -17,11 +19,13 @@ namespace GatewayInternal
     public class GatewayInternalServiceImpl : GatewayInternalService.GatewayInternalServiceBase
     {
         private readonly IMemoryStoreClientManager<IMemoryStoreClient> _matchmakingMemoryStoreClientManager;
+        private static AnalyticsSenderClassWrapper _analytics;
 
         public GatewayInternalServiceImpl(
-            IMemoryStoreClientManager<IMemoryStoreClient> matchmakingMemoryStoreClientManager)
+            IMemoryStoreClientManager<IMemoryStoreClient> matchmakingMemoryStoreClientManager, IAnalyticsSender analytics)
         {
             _matchmakingMemoryStoreClientManager = matchmakingMemoryStoreClientManager;
+            _analytics = analytics.WithEventClass("match");
         }
 
         public override async Task<AssignDeploymentsResponse> AssignDeployments(AssignDeploymentsRequest request,
@@ -92,9 +96,49 @@ namespace GatewayInternal
                         tx.DeleteAll(toDelete);
                     }
 
-                    // LOEK - Combine toUpdate & toDelete (or do party separately), loop over list..
-                    // send events using eventType = $"player_{assignment.Result.ToString()}"
-                    // If MATCHED -> capture deployment_name & deployment_id
+                    // foreach (var partyJoinRequest in toRequeue.Concat(toDelete)) // Loop over assignments instead..
+                    // {
+                    //     // LOEK - Combine toRequeue & toDelete (or do party separately), loop over list..
+                    //     // send events using eventType = $"player_{assignment.Result.ToString()}"
+                    //     // If MATCHED -> capture deployment_name & deployment_id
+                    //
+                    //     IDictionary<string, string> eventAttributes = new Dictionary<string, string>
+                    //     {
+                    //         { "partyId", partyJoinRequest.Id },
+                    //         { "matchRequestId", partyJoinRequest.MatchRequestId },
+                    //         { "queueType", partyJoinRequest.Type },
+                    //         { "partyPhase", partyJoinRequest.Party.CurrentPhase.ToString() }
+                    //     };
+                    //
+                    //
+                    //     _analytics.Send();
+                    // }
+
+                    foreach (var playerJoinRequest in toUpdate.OfType<PlayerJoinRequest>())
+                    {
+                        IDictionary<string, string> eventAttributes = new Dictionary<string, string>
+                        {
+                            { "partyId", playerJoinRequest.PartyId },
+                            { "matchRequestId", playerJoinRequest.MatchRequestId },
+                            { "queueType", playerJoinRequest.Type },
+                            { "playerState", playerJoinRequest.State.ToString() }
+                        };
+
+                        switch (playerJoinRequest.State)
+                        {
+                            case MatchState.Matched:
+                                eventAttributes.Add(new KeyValuePair<string, string>("deploymentName", playerJoinRequest.DeploymentName));
+                                eventAttributes.Add(new KeyValuePair<string, string>("deploymentId", playerJoinRequest.DeploymentId ));
+                                _analytics.Send("player_matched", (Dictionary<string, string>) eventAttributes, playerJoinRequest.Id);
+                                break;
+                            case MatchState.Requested:
+                                _analytics.Send("player_requeued", (Dictionary<string, string>) eventAttributes, playerJoinRequest.Id);
+                                break;
+                            case MatchState.Error:
+                                _analytics.Send("player_error", (Dictionary<string, string>) eventAttributes, playerJoinRequest.Id);
+                                break;
+                        }
+                    }
                 }
             }
             catch (EntryNotFoundException e)

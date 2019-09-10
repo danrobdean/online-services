@@ -25,7 +25,7 @@ namespace Improbable.OnlineServices.DataModel.Gateway
 
         [JsonConstructor]
         public PlayerJoinRequest(string id, string playerIdentity, string playerIdentityToken, string type, Dictionary<string, string> metadata,
-            MatchState state, string deploymentId, string deploymentName, string MatchRequestId = null, string partyId = null)
+            MatchState state, string deploymentId, string deploymentName, string matchRequestId = null, string partyId = null)
         {
             MatchRequestId = matchRequestId ?? Guid.NewGuid().ToString();
             PartyId = partyId ?? Guid.NewGuid().ToString();
