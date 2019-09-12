@@ -128,10 +128,14 @@ namespace Party
                     throw new TransactionAbortedException();
                 }
 
-                _analytics.Send("player_cancelled_party", new Dictionary<string, string>
+                string[] eventTypes = { "player_cancelled_party", "party_cancelled" };
+                foreach (string eventType in eventTypes)
                 {
-                    { "partyId", party.Id }
-                }, playerId);
+                    _analytics.Send(eventType, new Dictionary<string, string>
+                    {
+                        { "partyId", party.Id }
+                     }, playerId);
+                }
 
                 foreach (var m in party.GetMembers())
                 {
@@ -229,7 +233,6 @@ namespace Party
                 _analytics.Send("player_joined_party", new Dictionary<string, object>
                 {
                     { "partyId", partyToJoin.Id },
-                    { "currentPhase", partyToJoin.CurrentPhase.ToString() },
                     {
                         "invites", invites.Select(invite => new Dictionary<string, string>
                         {
@@ -406,7 +409,7 @@ namespace Party
                 {
                     transaction.UpdateAll(new List<Entry> { party });
                 }
-                
+
                 IDictionary<string, object> eventAttributes = new Dictionary<string, object>
                 {
                     { "partyId", updatedParty.Id },

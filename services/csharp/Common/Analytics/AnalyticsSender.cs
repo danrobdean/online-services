@@ -113,7 +113,7 @@ namespace Improbable.OnlineServices.Common.Analytics
                 { "eventType", eventType },
                 // TODO: Add versioning ability & resolve matching TODO in relevant unit tests
                 { "versionId", "0.2.0" },
-                { "eventTimestamp", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString() },
+                { "eventTimestamp", (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / (double) 1000).ToString("F") },
                 { "eventAttributes", JsonConvert.SerializeObject(eventAttributes) },
             };
             if (!String.IsNullOrEmpty(playerId)) {

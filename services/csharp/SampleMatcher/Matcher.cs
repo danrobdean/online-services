@@ -11,7 +11,7 @@ namespace Improbable.OnlineServices.SampleMatcher
 {
     public class Matcher : Improbable.OnlineServices.Base.Matcher.Matcher
     {
-        private const int TickMs = 200;
+        private const int TickMs = 5000;
         private const string DefaultMatchTag = "match";
         private readonly string _project;
         private readonly string _tag;
@@ -45,9 +45,9 @@ namespace Improbable.OnlineServices.SampleMatcher
                     {
                         { "partyId", party.Party.Id },
                         { "queueType", _tag },
-                        { "partyPhase", party.Party.CurrentPhase.ToString() }
-                        // { "matchRequestId", party.Party.MatchRequestId } // Todo: Add to party.proto definition
-                    });
+                        { "partyPhase", party.Party.CurrentPhase.ToString() },
+                        { "matchRequestId", party.MatchRequestId }
+                    }, party.Party.LeaderPlayerId);
 
                     foreach (var memberId in party.Party.MemberIds)
                     {
@@ -56,7 +56,7 @@ namespace Improbable.OnlineServices.SampleMatcher
                             { "partyId", party.Party.Id },
                             { "queueType", _tag },
                             { "playerJoinRequestState", "Matching" },
-                            // { "matchRequestId", party.Party.MatchRequestId } // Todo: Add to party.proto definition
+                            { "matchRequestId", party.MatchRequestId }
                         }, memberId);
                     }
 
@@ -73,13 +73,13 @@ namespace Improbable.OnlineServices.SampleMatcher
                             Party = party.Party
                         });
                         MarkDeploymentAsInUse(deploymentServiceClient, deployment);
-                        _analytics.Send("deployment_state_change", "deployment_in_use", new Dictionary<string, string>
+                        gatewayClient.AssignDeployments(assignRequest);
+                        _analytics.Send("deployment", "deployment_in_use", new Dictionary<string, string>
                         {
                             { "spatialProjectId", _project },
                             { "deploymentName", deployment.Name },
                             { "deploymentId", deployment.Id }
                         });
-                        gatewayClient.AssignDeployments(assignRequest);
                     }
                     else
                     {
@@ -92,6 +92,7 @@ namespace Improbable.OnlineServices.SampleMatcher
             }
             catch (RpcException e)
             {
+                Console.WriteLine(e.ToString());
                 if (e.StatusCode != StatusCode.ResourceExhausted && e.StatusCode != StatusCode.Unavailable)
                 {
                     throw;

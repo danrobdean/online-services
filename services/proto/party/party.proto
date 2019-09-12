@@ -20,7 +20,6 @@ message Party {
     repeated string memberIds = 5;
     map<string, string> metadata = 6;
     Phase current_phase = 7;
-    // Todo: string match_request_id = 8;
 }
 
 message CreatePartyRequest {

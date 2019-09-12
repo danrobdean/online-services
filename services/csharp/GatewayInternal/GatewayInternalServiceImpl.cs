@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Google.Protobuf;
 using Grpc.Core;
@@ -87,12 +86,10 @@ namespace GatewayInternal
                             { "queueType", partyJoinRequest.Type },
                             { "partyPhase", partyJoinRequest.Party.CurrentPhase.ToString() }
                         };
-                        
+
                         if (assignment.Result == Assignment.Types.Result.Matched)
                         {
-                            partyJoinRequest.RefreshQueueData();
-                            toRequeue.Add(partyJoinRequest);
-                            toUpdate.Add(partyJoinRequest);
+                            toDelete.Add(partyJoinRequest);
 
                             eventAttributes.Add(new KeyValuePair<string, string>("spatialProjectId", _project));
                             eventAttributes.Add(new KeyValuePair<string, string>("deploymentName", assignment.DeploymentName));
@@ -101,7 +98,9 @@ namespace GatewayInternal
                         }
                         else if (assignment.Result == Assignment.Types.Result.Requeued)
                         {
-                            toDelete.Add(partyJoinRequest);
+                            partyJoinRequest.RefreshQueueData();
+                            toRequeue.Add(partyJoinRequest);
+                            toUpdate.Add(partyJoinRequest);
                             _analytics.Send("party_requeued", (Dictionary<string, string>) eventAttributes, partyJoinRequest.Party.LeaderPlayerId);
                         }
                         else if (assignment.Result == Assignment.Types.Result.Error)
@@ -252,7 +251,8 @@ namespace GatewayInternal
             return new WaitingParty
             {
                 Party = ConvertToProto(request.Party),
-                Metadata = { request.Metadata }
+                Metadata = { request.Metadata },
+                MatchRequestId = request.MatchRequestId
             };
         }
 

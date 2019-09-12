@@ -4,6 +4,15 @@ data:
     "*":
       "*":
        category: online_services
+    "match":
+      "party_matching":
+        disabled: true
+      "party_requeued":
+        disabled: true
+      "player_matching":
+        disabled: true
+      "player_requeued":
+        disabled: true
 kind: ConfigMap
 metadata:
   name: analytics-config
