@@ -22,6 +22,12 @@ spec:
               name: "snapshot"
           - configMap:
               name: "launch-config"
+      - name: analytics-api-key
+        secret:
+          secretName: analytics-api-key
+      - name: analytics-config
+        configMap:
+          name: analytics-config
       containers:
       - name: deployment-pool
         image: gcr.io/logical-flame-194710/deployment-pool # Update
@@ -30,6 +36,10 @@ spec:
         - name: pool-config
           mountPath: /etc/pool
           readOnly: true
+        - name: analytics-api-key
+          mountPath: /secrets/
+        - name: analytics-config
+          mountPath: /config/
         ports:
         - containerPort: 8080
           name: 'metrics'
@@ -44,17 +54,26 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: online-services-config
-              key: spatial.project
+              key: spatialos.project
         args:
         - --launch-config
         - "/etc/pool/default_launch.json"
         - --snapshot
         - "/etc/pool/default.snapshot"
         - --minimum-ready-deployments
-        - "3"
+        - "1"
         - --match-type
         - "match"
         - --assembly-name
-        - "pool-assembly"
+        - "loeks_assembly"
         - --project
         - "$(SPATIAL_PROJECT)"
+        - --analytics.endpoint
+        - "http://analytics.endpoints.logical-flame-194710.cloud.goog:80/v1/event"
+        - --analytics.allow-insecure-endpoint
+        - --analytics.config-file-path
+        - "/config/analytics-config.yaml"
+        - --analytics.gcp-key-path
+        - "/secrets/analytics-api-key.txt"
+        - --analytics.environment
+        - "testing"
