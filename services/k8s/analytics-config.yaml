@@ -4,8 +4,8 @@ data:
     "*":
       "*":
        category: online_services
-     # The following events are disabled because they generate a very large amount of
-     # events whenever there is no deployment available:
+    # The following events are disabled because they generate a very large amount of
+    # events whenever there is no deployment available:
     "match":
       "party_matching":
         disabled: true
