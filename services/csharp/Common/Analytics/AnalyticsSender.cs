@@ -86,6 +86,7 @@ namespace Improbable.OnlineServices.Common.Analytics
         /// </summary>
         public async Task SendAsync<T>(string eventClass, string eventType, Dictionary<string, T> eventAttributes, string playerId = null)
         {
+            if (!_config.IsEnabled(eventClass, eventType)) return;
             // Get previous event ID after an atomic increment
             var eventId = Interlocked.Increment(ref _eventId) - 1;
 
