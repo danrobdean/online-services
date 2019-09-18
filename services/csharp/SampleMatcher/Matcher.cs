@@ -11,7 +11,7 @@ namespace Improbable.OnlineServices.SampleMatcher
 {
     public class Matcher : Improbable.OnlineServices.Base.Matcher.Matcher
     {
-        private const int TickMs = 5000;
+        private const int TickMs = 200;
         private const string DefaultMatchTag = "match";
         private readonly string _project;
         private readonly string _tag;
