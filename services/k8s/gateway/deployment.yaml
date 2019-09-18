@@ -20,7 +20,7 @@ spec:
         args: [
           "--http_port=9001",
           "--http2_port=9000",
-          "--service=gateway.endpoints.logical-flame-194710.cloud.goog", # Update
+          "--service=gateway.endpoints.[your Google project id].cloud.goog", # Update
           "--rollout_strategy=managed",
           "--backend=grpc://127.0.0.1:4040"
         ]
@@ -28,7 +28,7 @@ spec:
           - containerPort: 9000
           - containerPort: 9001
       - name: gateway
-        image: gcr.io/logical-flame-194710/gateway # Update
+        image: gcr.io/[your Google project id]/gateway # Update
         imagePullPolicy: Always
         ports:
         - containerPort: 4040
@@ -48,19 +48,21 @@ spec:
               name: online-services-config
               key: redis.connection-string
         args:
+        # Gateway Arguments
         - --redis_connection_string
         - "$(REDIS_CONNECTION_STRING)"
         - --grpc_service_port
         - "4040"
+        # Analytics Instrumentation Arguments
         - --analytics.endpoint
-        - "http://analytics.endpoints.logical-flame-194710.cloud.goog:80/v1/event"
+        - "http://analytics.endpoints.[your Google project id].cloud.goog:80/v1/event"
         - --analytics.allow-insecure-endpoint
         - --analytics.config-file-path
         - "/config/analytics-config.yaml"
         - --analytics.gcp-key-path
         - "/secrets/analytics-api-key.txt"
         - --analytics.environment
-        - "testing"
+        - "[your analytics environment]" # Update: {testing, staging, ...}
         volumeMounts:
         - mountPath: /secrets/
           name: analytics-api-key

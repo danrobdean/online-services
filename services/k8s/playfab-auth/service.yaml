@@ -15,4 +15,4 @@ spec:
     port: 4000
     targetPort: 9000
   type: LoadBalancer
-  loadBalancerIP: "34.77.117.11" # Update
+  loadBalancerIP: "[your PlayFab Auth IP address]" # Update

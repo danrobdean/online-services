@@ -30,7 +30,7 @@ spec:
           name: analytics-config
       containers:
       - name: deployment-pool
-        image: gcr.io/logical-flame-194710/deployment-pool # Update
+        image: gcr.io/[your Google project id]/deployment-pool # Update
         imagePullPolicy: Always
         volumeMounts:
         - name: pool-config
@@ -56,6 +56,7 @@ spec:
               name: online-services-config
               key: spatialos.project
         args:
+        # Deployment Pool Arguments
         - --launch-config
         - "/etc/pool/default_launch.json"
         - --snapshot
@@ -63,17 +64,18 @@ spec:
         - --minimum-ready-deployments
         - "1"
         - --match-type
-        - "match"
+        - "[your match type]" # Update
         - --assembly-name
-        - "loeks_assembly"
+        - "[your assembly name]" # Update
         - --project
         - "$(SPATIAL_PROJECT)"
+        # Analytics Instrumentation Arguments
         - --analytics.endpoint
-        - "http://analytics.endpoints.logical-flame-194710.cloud.goog:80/v1/event"
+        - "http://analytics.endpoints.[your Google project id].cloud.goog:80/v1/event"
         - --analytics.allow-insecure-endpoint
         - --analytics.config-file-path
         - "/config/analytics-config.yaml"
         - --analytics.gcp-key-path
         - "/secrets/analytics-api-key.txt"
         - --analytics.environment
-        - "testing"
+        - "[your analytics environment]" # Update: {testing, staging, ...}
