@@ -30,7 +30,7 @@ spec:
           name: analytics-config
       containers:
       - name: deployment-pool
-        image: gcr.io/{{your_google_project_id}}/deployment-pool # Update
+        image: gcr.io/logical-flame-194710/deployment-pool # Update
         imagePullPolicy: Always
         volumeMounts:
         - name: pool-config
@@ -64,19 +64,19 @@ spec:
         - --minimum-ready-deployments
         - "3"
         - --match-type
-        - "{{your_match_type}}" # Update
+        - "open_world" # Update
         - --assembly-name
-        - "{{your_assembly_name}}" # Update
+        - "loeks_assembly" # Update
         - --project
         - "$(SPATIAL_PROJECT)"
         # Analytics Instrumentation Arguments
         - --analytics.endpoint
-        - "http://analytics.endpoints.{{your_google_project_id}}.cloud.goog:80/v1/event" # Update
+        - "http://analytics.endpoints.logical-flame-194710.cloud.goog:80/v1/event" # Update
         - --analytics.allow-insecure-endpoint
         - --analytics.config-file-path
         - "/config/analytics-config.yaml"
         - --analytics.gcp-key-path
         - "/secrets/analytics-api-key.txt"
         - --analytics.environment
-        - "{{your_analytics_environment}}" # Update to one of: {testing, staging, ...}
+        - "testing" # Update to one of: {testing, staging, ...}
       terminationGracePeriodSeconds: 300

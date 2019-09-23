@@ -100,7 +100,7 @@ namespace SampleClient
 
                     var op = gatewayClient.Join(new JoinRequest
                     {
-                        MatchmakingType = "match"
+                        MatchmakingType = "open_world"
                     }, pitMetadata);
                     Console.WriteLine("Joined queue; waiting for match.");
 
