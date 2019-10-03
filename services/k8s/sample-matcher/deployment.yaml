@@ -38,6 +38,8 @@ spec:
             configMapKeyRef:
               name: online-services-config
               key: spatialos.project
+        - name: MATCH_TAG
+          value: "match"
         - name: GATEWAY_SERVICE_TARGET
           value: "gateway-internal.default.svc.cluster.local:80"
         args:

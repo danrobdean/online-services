@@ -56,7 +56,7 @@ spec:
           valueFrom:
             secretKeyRef:
               name: playfab-secret-key
-              key: playfab-secret.txt
+              key: playfab-secret
         args:
         # PlayFab Auth Arguments
         - --grpc_service_port
