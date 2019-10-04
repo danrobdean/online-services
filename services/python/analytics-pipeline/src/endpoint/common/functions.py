@@ -32,7 +32,7 @@ def try_format_event(index, event, batch_id, analytics_environment):
         return [False, event]
 
 
-def try_format_playfab_event(event, root_fields):
+def try_format_playfab_event(event, batch_id, analytics_environment, playfab_root_fields):
 
     """ Whenever URL paramter `&event_category=` is set to `playfab` when POST'ing events
     to our Cloud Endpoint, this event formatting function is used instead, which better
@@ -51,15 +51,17 @@ def try_format_playfab_event(event, root_fields):
         event_new = {}
         event_attributes = {}
         for attribute in event.keys():
-            if attribute in root_fields:
+            if attribute in playfab_root_fields:
                 if isinstance(event[attribute], dict):
                     event_new[attribute] = json.dumps(event[attribute])
                 else:
                     event_new[attribute] = event[attribute]
             else:
                 event_attributes[attribute] = event[attribute]
-        event_new['EventAttributes'] = json.dumps(event_attributes)
+        event_new['BatchId'] = batch_id
         event_new['ReceivedTimestamp'] = time.time()
+        event_new['AnalyticsEnvironment'] = analytics_environment
+        event_new['EventAttributes'] = json.dumps(event_attributes)
         return [True, event_new]
     except Exception:
         return [False, event]
